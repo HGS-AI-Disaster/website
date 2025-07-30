@@ -89,7 +89,7 @@ function Navigation() {
         <div className="search-bar flex-5 flex justify-center m-8">
           <Input
             type="text"
-            className={"rounded-full w-2/5"}
+            className={"rounded-full w-2/5 z-20 bg-gray-50 px-6 py-5"}
             placeholder="Search places..."
           />
         </div>
@@ -120,45 +120,55 @@ function Navigation() {
       <div className="buttom flex-1 flex flex-col justify-end">
         <div className="time-series flex mb-8 flex-col items-center z-20">
           <NavigationMenu className={"bg-gray-50 h-fit px-1 py-1 rounded-lg"}>
-            <NavigationMenuList className={"gap-5"}>
+            <NavigationMenuList className={"gap-1"}>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={"cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={"cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"}
                 >
                   01 Apr
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   15 Apr
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   29 Apr
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   13 Apr
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   15 Apr
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   21 Apr
                 </NavigationMenuLink>
@@ -170,42 +180,54 @@ function Navigation() {
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   30 Apr
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   4 May
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   6 May
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   9 May
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   11 May
                 </NavigationMenuLink>
               </NavigationMenuItem>
               <NavigationMenuItem>
                 <NavigationMenuLink
-                  className={" cursor-pointer bg-gray-50 hover:bg-gray-200"}
+                  className={
+                    " cursor-pointer px-4 bg-gray-50 hover:bg-gray-200"
+                  }
                 >
                   13 May
                 </NavigationMenuLink>

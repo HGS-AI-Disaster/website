@@ -74,14 +74,14 @@ export default function CustomZoom() {
       </Button>
       <Button
         className={
-          "cursor-pointer h-full w-fit bg-gray-50 hover:bg-gray-200 text-black"
+          "cursor-pointer h-full w-fit bg-gray-50 hover:bg-gray-200 text-black py-3"
         }
       >
         <img
-          src="../src/assets/north.png"
+          src="../src/assets/route-arrow.svg"
           alt=""
           srcset=""
-          className="w-8 h-8"
+          className=""
         />
       </Button>
     </div>
