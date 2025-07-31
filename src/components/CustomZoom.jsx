@@ -1,5 +1,6 @@
 import { useMap } from "react-leaflet"
 import { Button } from "./ui/button"
+import { Navigation2 } from "lucide-react"
 
 export default function CustomZoom() {
   const map = useMap()
@@ -74,14 +75,13 @@ export default function CustomZoom() {
       </Button>
       <Button
         className={
-          "cursor-pointer h-full w-fit bg-gray-50 hover:bg-gray-200 text-black py-3"
+          "cursor-pointer bg-gray-50 hover:bg-gray-200 h-[45px] w-[50px]"
         }
       >
-        <img
-          src="../src/assets/route-arrow.svg"
-          alt=""
-          srcset=""
-          className=""
+        <Navigation2
+          fill="black"
+          stroke="black"
+          className="size-[25px]"
         />
       </Button>
     </div>

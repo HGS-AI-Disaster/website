@@ -1,6 +1,16 @@
 import React, { useState } from "react"
 import { Input } from "./ui/input"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+import {
   Menubar,
   MenubarContent,
   MenubarItem,
@@ -13,16 +23,6 @@ import {
   MenubarSubContent,
 } from "@/components/ui/menubar"
 import { Button } from "./ui/button"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 
 import {
@@ -33,7 +33,15 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import {
+  ArrowUpDown,
+  ChevronDown,
+  Eye,
+  MoreHorizontal,
+  Pencil,
+  Trash,
+  Trash2,
+} from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
@@ -58,36 +66,51 @@ const data = [
     id: "m5gr84i9",
     layer: "Layer 1",
     category: "Chiba University",
-    amount: 316,
-    visibility: "success",
+    layerDate: "30/07/2025",
+    dateUpload: "23/07/2025",
+    description: "Lorem ipsum dolor sit amet.",
+    source: "Chiba University",
+    visibility: "public",
   },
   {
     id: "3u1reuv4",
     layer: "Layer 2",
     category: "Chiba University",
-    amount: 242,
-    visibility: "success",
+    layerDate: "30/07/2025",
+    dateUpload: "23/07/2025",
+    description: "Lorem ipsum dolor sit amet.",
+    source: "Chiba University",
+    visibility: "public",
   },
   {
     id: "derv1ws0",
     layer: "Layer 3",
     category: "Chiba University",
-    amount: 837,
-    visibility: "processing",
+    layerDate: "30/07/2025",
+    dateUpload: "23/07/2025",
+    description: "Lorem ipsum dolor sit amet.",
+    source: "Chiba University",
+    visibility: "private",
   },
   {
     id: "5kma53ae",
     layer: "Layer 4",
     category: "Chiba University",
-    amount: 874,
-    visibility: "success",
+    layerDate: "30/07/2025",
+    dateUpload: "23/07/2025",
+    description: "Lorem ipsum dolor sit amet.",
+    source: "Chiba University",
+    visibility: "public",
   },
   {
     id: "bhqecj4p",
     layer: "Layer 5",
     category: "Chiba University",
-    amount: 721,
-    visibility: "failed",
+    layerDate: "30/07/2025",
+    dateUpload: "23/07/2025",
+    description: "Lorem ipsum dolor sit amet.",
+    source: "Chiba University",
+    visibility: "private",
   },
 ]
 
@@ -97,7 +120,7 @@ export const columns = [
     header: ({ column }) => {
       return (
         <div className="flex items-center gap-1">
-          <div className="">Layer</div>
+          <div className="">Layer name</div>
           <Button
             variant="ghost"
             className="hover:bg-gray-200 !p-1 h-fit"
@@ -129,6 +152,60 @@ export const columns = [
     cell: ({ row }) => <div>{row.getValue("category")}</div>,
   },
   {
+    accessorKey: "layerDate",
+    header: ({ column }) => (
+      <div className="flex items-center gap-1">
+        <div className="">Layer date</div>
+        <Button
+          variant="ghost"
+          className="hover:bg-gray-200 !p-1 h-fit"
+          // onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          <ArrowUpDown />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => {
+      return <div>{row.getValue("layerDate")}</div>
+    },
+  },
+  {
+    accessorKey: "dateUpload",
+    header: ({ column }) => (
+      <div className="flex items-center gap-1">
+        <div className="">Date uploaded</div>
+        <Button
+          variant="ghost"
+          className="hover:bg-gray-200 !p-1 h-fit"
+          // onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          <ArrowUpDown />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => {
+      return <div>{row.getValue("dateUpload")}</div>
+    },
+  },
+  {
+    accessorKey: "source",
+    header: ({ column }) => (
+      <div className="flex items-center gap-1">
+        <div className="">Source</div>
+        <Button
+          variant="ghost"
+          className="hover:bg-gray-200 !p-1 h-fit"
+          // onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+        >
+          <ArrowUpDown />
+        </Button>
+      </div>
+    ),
+    cell: ({ row }) => (
+      <div className="capitalize">{row.getValue("source")}</div>
+    ),
+  },
+  {
     accessorKey: "visibility",
     header: "Visibility",
     cell: ({ row }) => (
@@ -136,46 +213,90 @@ export const columns = [
     ),
   },
   {
-    accessorKey: "amount",
-    header: () => <div className="text-right">Amount</div>,
-    cell: ({ row }) => {
-      const amount = parseFloat(row.getValue("amount"))
-      // Format the amount as a dollar amount
-      const formatted = new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-      }).format(amount)
-      return <div className="text-right font-medium">{formatted}</div>
-    },
-  },
-  {
     id: "actions",
     enableHiding: false,
+    header: "Actions",
     cell: ({ row }) => {
-      const payment = row.original
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              className="h-8 w-8 p-0"
-            >
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(payment.id)}
-            >
-              Copy payment ID
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>View customer</DropdownMenuItem>
-            <DropdownMenuItem>View payment details</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="action flex gap-2">
+          <Dialog>
+            <DialogTrigger>
+              <Pencil className="size-[1rem] cursor-pointer" />
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Edit layer</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4">
+                <div className="grid gap-3">
+                  <Label htmlFor="name-1">Name</Label>
+                  <Input
+                    id="name-1"
+                    name="name"
+                    defaultValue="Pedro Duarte"
+                  />
+                </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="username-1">Username</Label>
+                  <Input
+                    id="username-1"
+                    name="username"
+                    defaultValue="@peduarte"
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit">Save changes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog>
+            <DialogTrigger>
+              <Eye className="size-[1rem] cursor-pointer" />
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Set visibility to private?</DialogTitle>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button type="submit">Yes</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Dialog>
+            <DialogTrigger>
+              <Trash2
+                className="size-[1rem] cursor-pointer"
+                stroke="red"
+              />
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Delete layer</DialogTitle>
+                <DialogDescription>
+                  Are you sure to delete {row.original.layer}?{" "}
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button
+                  type="submit"
+                  variant={"destructive"}
+                >
+                  Delete
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       )
     },
   },
@@ -206,7 +327,7 @@ function LayerManagement() {
   })
 
   return (
-    <div className="bg-gray-200 p-12 z-50">
+    <div className="bg-gray-200 p-12">
       <div className="bg-gray-50 py-8 px-12 rounded-lg">
         <div className="heading flex items-center">
           <div className="title flex-1">
