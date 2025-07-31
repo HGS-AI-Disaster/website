@@ -16,7 +16,6 @@ import {
   MenubarItem,
   MenubarMenu,
   MenubarSeparator,
-  MenubarShortcut,
   MenubarTrigger,
   MenubarSub,
   MenubarSubTrigger,
@@ -33,25 +32,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import {
-  ArrowUpDown,
-  ChevronDown,
-  Eye,
-  MoreHorizontal,
-  Pencil,
-  Trash,
-  Trash2,
-} from "lucide-react"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -60,6 +41,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import AddLayer from "./AddLayer"
+import EditLayer from "./EditLayer"
 
 const data = [
   {
@@ -219,40 +202,7 @@ export const columns = [
     cell: ({ row }) => {
       return (
         <div className="action flex gap-2">
-          <Dialog>
-            <DialogTrigger>
-              <Pencil className="size-[1rem] cursor-pointer" />
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit layer</DialogTitle>
-              </DialogHeader>
-              <div className="grid gap-4">
-                <div className="grid gap-3">
-                  <Label htmlFor="name-1">Name</Label>
-                  <Input
-                    id="name-1"
-                    name="name"
-                    defaultValue="Pedro Duarte"
-                  />
-                </div>
-                <div className="grid gap-3">
-                  <Label htmlFor="username-1">Username</Label>
-                  <Input
-                    id="username-1"
-                    name="username"
-                    defaultValue="@peduarte"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button type="submit">Save changes</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <EditLayer />
           <Dialog>
             <DialogTrigger>
               <Eye className="size-[1rem] cursor-pointer" />
@@ -412,59 +362,7 @@ function LayerManagement() {
                 </MenubarContent>
               </MenubarMenu>
             </Menubar>
-            <Dialog>
-              <form>
-                <DialogTrigger asChild>
-                  <Button
-                    className={
-                      "cursor-pointer bg-blue-900 text-white hover:bg-blue-950 flex items-center gap-1"
-                    }
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="21"
-                      height="21"
-                      fill="currentColor"
-                      className="bi bi-plus"
-                      viewBox="0 0 14 14"
-                    >
-                      <path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4" />
-                    </svg>
-                    <div className="text">Add Layer</div>
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Add Layer</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-4">
-                    <div className="grid gap-3">
-                      <Label htmlFor="username-1">Username</Label>
-                      <Input
-                        id="username-1"
-                        name="username"
-                      />
-                    </div>
-                    <div className="grid gap-3">
-                      <Label htmlFor="password">Password</Label>
-                      <Input
-                        id="password"
-                        type={"password"}
-                        name="password"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <DialogClose asChild>
-                      <Button type="submit">Login</Button>
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </form>
-            </Dialog>
+            <AddLayer />
           </div>
         </div>
         <div className="table w-full">
@@ -518,11 +416,7 @@ function LayerManagement() {
               </TableBody>
             </Table>
           </div>
-          <div className="flex items-center justify-end space-x-2 py-4">
-            <div className="text-muted-foreground flex-1 text-sm">
-              {table.getFilteredSelectedRowModel().rows.length} of{" "}
-              {table.getFilteredRowModel().rows.length} row(s) selected.
-            </div>
+          <div className="flex items-center space-x-2 py-4">
             <div className="space-x-2">
               <Button
                 variant="outline"

@@ -16,6 +16,14 @@ import Map from "./components/Map"
 import Navigation from "./components/Navigation"
 import { useState } from "react"
 import LayerManagement from "./components/LayerManagement"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 function App() {
   const [isLogin, setIsLogin] = useState(false)
@@ -33,53 +41,80 @@ function App() {
           <div className="text text-2xl font-semibold">
             AI Disaster Mitigation Platform
           </div>
-          <Dialog>
-            <form>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={"cursor-pointer"}
+          {isLogin ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  fill="currentColor"
+                  className="bi bi-person-circle text-gray-400 w-8 h-8"
+                  viewBox="0 0 16 16"
                 >
-                  Login as admin
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Login as Admin</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4">
-                  <div className="grid gap-3">
-                    <Label htmlFor="username-1">Username</Label>
-                    <Input
-                      id="username-1"
-                      name="username"
-                    />
+                  <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
+                  <path
+                    fill-rule="evenodd"
+                    d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"
+                  />
+                </svg>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuLabel>Admin 01</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>Profile</DropdownMenuItem>
+                <DropdownMenuItem>Logout</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Dialog>
+              <form>
+                <DialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={"cursor-pointer"}
+                  >
+                    Login as admin
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>Login as Admin</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4">
+                    <div className="grid gap-3">
+                      <Label htmlFor="username-1">Username</Label>
+                      <Input
+                        id="username-1"
+                        name="username"
+                      />
+                    </div>
+                    <div className="grid gap-3">
+                      <Label htmlFor="password">Password</Label>
+                      <Input
+                        id="password"
+                        type={"password"}
+                        name="password"
+                      />
+                    </div>
                   </div>
-                  <div className="grid gap-3">
-                    <Label htmlFor="password">Password</Label>
-                    <Input
-                      id="password"
-                      type={"password"}
-                      name="password"
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </DialogClose>
-                  <DialogClose asChild>
-                    <Button
-                      type="submit"
-                      onClick={() => login()}
-                    >
-                      Login
-                    </Button>
-                  </DialogClose>
-                </DialogFooter>
-              </DialogContent>
-            </form>
-          </Dialog>
+                  <DialogFooter>
+                    <DialogClose asChild>
+                      <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <DialogClose asChild>
+                      <Button
+                        type="submit"
+                        onClick={() => login()}
+                      >
+                        Login
+                      </Button>
+                    </DialogClose>
+                  </DialogFooter>
+                </DialogContent>
+              </form>
+            </Dialog>
+          )}
         </div>
         <Map />
         <Navigation />
