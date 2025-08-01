@@ -15,7 +15,7 @@ import "leaflet/dist/leaflet.css"
 function Map() {
   const position = [35.6074, 140.1065]
   return (
-    <div className="absolute top-0 left-0 w-full h-[679.5px] z-10">
+    <div className="absolute top-0 left-0 w-full h-[611.5px] z-10">
       <MapContainer
         center={position}
         zoom={12}

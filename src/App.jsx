@@ -49,7 +49,7 @@ function App() {
                   width="16"
                   height="16"
                   fill="currentColor"
-                  className="bi bi-person-circle text-gray-400 w-8 h-8"
+                  className="bi bi-person-circle text-gray-500 cursor-pointer w-8 h-8"
                   viewBox="0 0 16 16"
                 >
                   <path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
