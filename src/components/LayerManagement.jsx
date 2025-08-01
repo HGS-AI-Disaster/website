@@ -49,7 +49,7 @@ const data = [
     id: "m5gr84i9",
     layer: "Layer 1",
     category: "Chiba University",
-    layerDate: "30/07/2025",
+    layerDate: "07/08/2025",
     dateUpload: "23/07/2025",
     description: "Lorem ipsum dolor sit amet.",
     source: "Chiba University",
@@ -59,8 +59,8 @@ const data = [
     id: "3u1reuv4",
     layer: "Layer 2",
     category: "Chiba University",
-    layerDate: "30/07/2025",
-    dateUpload: "23/07/2025",
+    layerDate: "02/08/2025",
+    dateUpload: "24/07/2025",
     description: "Lorem ipsum dolor sit amet.",
     source: "Chiba University",
     visibility: "public",
@@ -69,8 +69,8 @@ const data = [
     id: "derv1ws0",
     layer: "Layer 3",
     category: "Chiba University",
-    layerDate: "30/07/2025",
-    dateUpload: "23/07/2025",
+    layerDate: "03/08/2025",
+    dateUpload: "25/07/2025",
     description: "Lorem ipsum dolor sit amet.",
     source: "Chiba University",
     visibility: "private",
@@ -79,8 +79,8 @@ const data = [
     id: "5kma53ae",
     layer: "Layer 4",
     category: "Chiba University",
-    layerDate: "30/07/2025",
-    dateUpload: "23/07/2025",
+    layerDate: "01/08/2025",
+    dateUpload: "26/07/2025",
     description: "Lorem ipsum dolor sit amet.",
     source: "Chiba University",
     visibility: "public",
@@ -89,13 +89,25 @@ const data = [
     id: "bhqecj4p",
     layer: "Layer 5",
     category: "Chiba University",
-    layerDate: "30/07/2025",
-    dateUpload: "23/07/2025",
+    layerDate: "04/08/2025",
+    dateUpload: "27/07/2025",
     description: "Lorem ipsum dolor sit amet.",
     source: "Chiba University",
     visibility: "private",
   },
 ]
+
+const sortByDate = (rowA, rowB, columnId) => {
+  const parseDate = (str) => {
+    const [day, month, year] = str.split("/")
+    return new Date(`${year}-${month}-${day}`) // Format ISO
+  }
+
+  const dateA = parseDate(rowA.getValue(columnId))
+  const dateB = parseDate(rowB.getValue(columnId))
+
+  return dateA - dateB
+}
 
 export const columns = [
   {
@@ -136,13 +148,14 @@ export const columns = [
   },
   {
     accessorKey: "layerDate",
+    sortingFn: sortByDate,
     header: ({ column }) => (
       <div className="flex items-center gap-1">
         <div className="">Layer date</div>
         <Button
           variant="ghost"
           className="hover:bg-gray-200 !p-1 h-fit"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           <ArrowUpDown />
         </Button>
@@ -154,13 +167,14 @@ export const columns = [
   },
   {
     accessorKey: "dateUpload",
+    sortingFn: sortByDate,
     header: ({ column }) => (
       <div className="flex items-center gap-1">
         <div className="">Date uploaded</div>
         <Button
           variant="ghost"
           className="hover:bg-gray-200 !p-1 h-fit"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           <ArrowUpDown />
         </Button>
