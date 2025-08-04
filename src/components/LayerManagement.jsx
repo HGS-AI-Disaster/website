@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Input } from "./ui/input"
 import {
   Dialog,
@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/menubar"
 import { Button } from "./ui/button"
 import { Label } from "@/components/ui/label"
-
 import {
   flexRender,
   getCoreRowModel,
@@ -43,59 +42,60 @@ import {
 } from "@/components/ui/table"
 import AddLayer from "./AddLayer"
 import EditLayer from "./EditLayer"
+import { supabase } from "../lib/supabaseClient"
 
-const data = [
-  {
-    id: "m5gr84i9",
-    layer: "Layer 1",
-    category: "Chiba University",
-    layerDate: "07/08/2025",
-    dateUpload: "23/07/2025",
-    description: "Lorem ipsum dolor sit amet.",
-    source: "Chiba University",
-    visibility: "public",
-  },
-  {
-    id: "3u1reuv4",
-    layer: "Layer 2",
-    category: "Chiba University",
-    layerDate: "02/08/2025",
-    dateUpload: "24/07/2025",
-    description: "Lorem ipsum dolor sit amet.",
-    source: "Chiba University",
-    visibility: "public",
-  },
-  {
-    id: "derv1ws0",
-    layer: "Layer 3",
-    category: "Chiba University",
-    layerDate: "03/08/2025",
-    dateUpload: "25/07/2025",
-    description: "Lorem ipsum dolor sit amet.",
-    source: "Chiba University",
-    visibility: "private",
-  },
-  {
-    id: "5kma53ae",
-    layer: "Layer 4",
-    category: "Chiba University",
-    layerDate: "01/08/2025",
-    dateUpload: "26/07/2025",
-    description: "Lorem ipsum dolor sit amet.",
-    source: "Chiba University",
-    visibility: "public",
-  },
-  {
-    id: "bhqecj4p",
-    layer: "Layer 5",
-    category: "Chiba University",
-    layerDate: "04/08/2025",
-    dateUpload: "27/07/2025",
-    description: "Lorem ipsum dolor sit amet.",
-    source: "Chiba University",
-    visibility: "private",
-  },
-]
+// const data = [
+//   {
+//     id: "m5gr84i9",
+//     layer: "Layer 1",
+//     category: "Cloud Layer",
+//     layerDate: "07/08/2025",
+//     dateUpload: "23/07/2025",
+//     description: "Lorem ipsum dolor sit amet.",
+//     source: "Chiba University",
+//     visibility: "public",
+//   },
+//   {
+//     id: "3u1reuv4",
+//     layer: "Layer 2",
+//     category: "Chiba University",
+//     layerDate: "02/08/2025",
+//     dateUpload: "24/07/2025",
+//     description: "Lorem ipsum dolor sit amet.",
+//     source: "Chiba University",
+//     visibility: "public",
+//   },
+//   {
+//     id: "derv1ws0",
+//     layer: "Layer 3",
+//     category: "Chiba University",
+//     layerDate: "03/08/2025",
+//     dateUpload: "25/07/2025",
+//     description: "Lorem ipsum dolor sit amet.",
+//     source: "Chiba University",
+//     visibility: "private",
+//   },
+//   {
+//     id: "5kma53ae",
+//     layer: "Layer 4",
+//     category: "Earthquake Layer",
+//     layerDate: "01/08/2025",
+//     dateUpload: "26/07/2025",
+//     description: "Lorem ipsum dolor sit amet.",
+//     source: "Chiba University",
+//     visibility: "public",
+//   },
+//   {
+//     id: "bhqecj4p",
+//     layer: "Layer 5",
+//     category: "Typhoon Layer",
+//     layerDate: "04/08/2025",
+//     dateUpload: "27/07/2025",
+//     description: "Lorem ipsum dolor sit amet.",
+//     source: "Chiba University",
+//     visibility: "private",
+//   },
+// ]
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
@@ -221,17 +221,41 @@ export const columns = [
             <DialogTrigger>
               <Eye className="size-[1rem] cursor-pointer" />
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Set visibility to private?</DialogTitle>
-              </DialogHeader>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button type="submit">Yes</Button>
-              </DialogFooter>
-            </DialogContent>
+            {row.original.visibility === "public" ? (
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Set visibility to private?</DialogTitle>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button
+                    type="submit"
+                    onClick={() => (row.original.visibility = "private")}
+                  >
+                    Yes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            ) : (
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Set visibility to public?</DialogTitle>
+                </DialogHeader>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button
+                    type="submit"
+                    onClick={() => (row.original.visibility = "public")}
+                  >
+                    Yes
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            )}
           </Dialog>
           <Dialog>
             <DialogTrigger>
@@ -267,6 +291,7 @@ export const columns = [
 ]
 
 function LayerManagement() {
+  const [data, setData] = useState([])
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
   const [columnVisibility, setColumnVisibility] = useState({})
@@ -289,6 +314,30 @@ function LayerManagement() {
       rowSelection,
     },
   })
+  const [loading, setLoading] = useState(true)
+
+  const getUniqueValues = (data, key) => {
+    return [...new Set(data.map((item) => item[key]))]
+  }
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const { data, error } = await supabase
+        .from("layers") // nama tabel
+        .select("*") // atau pilih kolom tertentu
+
+      if (error) {
+        console.error("Error fetching data:", error)
+      } else {
+        setData(data)
+      }
+      setLoading(false)
+    }
+
+    fetchData()
+
+    console.log(data)
+  }, [])
 
   return (
     <div className="bg-gray-200 p-12">
@@ -307,75 +356,157 @@ function LayerManagement() {
               }
               className="max-w-sm"
             />
-            <Menubar>
+            {/* <Menubar>
               <MenubarMenu>
                 <MenubarTrigger>Filter</MenubarTrigger>
                 <MenubarContent>
-                  <MenubarItem>View All</MenubarItem>
+                  <MenubarItem
+                    onClick={() => table.getColumn("layer")?.setFilterValue("")}
+                  >
+                    View All
+                  </MenubarItem>
                   <MenubarSeparator />
                   <MenubarSub>
                     <MenubarSubTrigger>Layer</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>View all</MenubarItem>
+                      <MenubarItem
+                        onClick={() =>
+                          table.getColumn("layer")?.setFilterValue("")
+                        }
+                      >
+                        View all
+                      </MenubarItem>
                       <MenubarSeparator />
-                      <MenubarItem>Cloud Layer</MenubarItem>
-                      <MenubarItem>Typhoon Layer</MenubarItem>
-                      <MenubarItem>Flood Layer</MenubarItem>
+                      {getUniqueValues(data, "layer").map((value) => (
+                        <MenubarItem
+                          key={value}
+                          onClick={() =>
+                            table.getColumn("layer")?.setFilterValue(value)
+                          }
+                        >
+                          {value}
+                        </MenubarItem>
+                      ))}
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
-                    <MenubarSubTrigger>Category</MenubarSubTrigger>
+                    <MenubarSubTrigger>Categoty</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>View all</MenubarItem>
+                      <MenubarItem
+                        onClick={() =>
+                          table.getColumn("category")?.setFilterValue("")
+                        }
+                      >
+                        View all
+                      </MenubarItem>
                       <MenubarSeparator />
-                      <MenubarItem>Cloud Layer</MenubarItem>
-                      <MenubarItem>Typhoon Layer</MenubarItem>
-                      <MenubarItem>Flood Layer</MenubarItem>
+                      {getUniqueValues(data, "category").map((value) => (
+                        <MenubarItem
+                          key={value}
+                          onClick={() =>
+                            table.getColumn("category")?.setFilterValue(value)
+                          }
+                        >
+                          {value}
+                        </MenubarItem>
+                      ))}
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
                     <MenubarSubTrigger>Layer date</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>View all</MenubarItem>
+                      <MenubarItem
+                        onClick={() =>
+                          table.getColumn("layerDate")?.setFilterValue("")
+                        }
+                      >
+                        View all
+                      </MenubarItem>
                       <MenubarSeparator />
-                      <MenubarItem>Cloud Layer</MenubarItem>
-                      <MenubarItem>Typhoon Layer</MenubarItem>
-                      <MenubarItem>Flood Layer</MenubarItem>
+                      {getUniqueValues(data, "layerDate").map((value) => (
+                        <MenubarItem
+                          key={value}
+                          onClick={() =>
+                            table.getColumn("layerDate")?.setFilterValue(value)
+                          }
+                        >
+                          {value}
+                        </MenubarItem>
+                      ))}
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
                     <MenubarSubTrigger>Date uploaded</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>View all</MenubarItem>
+                      <MenubarItem
+                        onClick={() =>
+                          table.getColumn("dateUpload")?.setFilterValue("")
+                        }
+                      >
+                        View all
+                      </MenubarItem>
                       <MenubarSeparator />
-                      <MenubarItem>Cloud Layer</MenubarItem>
-                      <MenubarItem>Typhoon Layer</MenubarItem>
-                      <MenubarItem>Flood Layer</MenubarItem>
+                      {getUniqueValues(data, "dateUpload").map((value) => (
+                        <MenubarItem
+                          key={value}
+                          onClick={() =>
+                            table.getColumn("dateUpload")?.setFilterValue(value)
+                          }
+                        >
+                          {value}
+                        </MenubarItem>
+                      ))}
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
                     <MenubarSubTrigger>Source</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>View all</MenubarItem>
+                      <MenubarItem
+                        onClick={() =>
+                          table.getColumn("source")?.setFilterValue("")
+                        }
+                      >
+                        View all
+                      </MenubarItem>
                       <MenubarSeparator />
-                      <MenubarItem>Cloud Layer</MenubarItem>
-                      <MenubarItem>Typhoon Layer</MenubarItem>
-                      <MenubarItem>Flood Layer</MenubarItem>
+                      {getUniqueValues(data, "source").map((value) => (
+                        <MenubarItem
+                          key={value}
+                          onClick={() =>
+                            table.getColumn("source")?.setFilterValue(value)
+                          }
+                        >
+                          {value}
+                        </MenubarItem>
+                      ))}
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
                     <MenubarSubTrigger>Visibility</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem>View all</MenubarItem>
+                      <MenubarItem
+                        onClick={() =>
+                          table.getColumn("visibility")?.setFilterValue("")
+                        }
+                      >
+                        View all
+                      </MenubarItem>
                       <MenubarSeparator />
-                      <MenubarItem>Cloud Layer</MenubarItem>
-                      <MenubarItem>Typhoon Layer</MenubarItem>
-                      <MenubarItem>Flood Layer</MenubarItem>
+                      {getUniqueValues(data, "visibility").map((value) => (
+                        <MenubarItem
+                          key={value}
+                          onClick={() =>
+                            table.getColumn("visibility")?.setFilterValue(value)
+                          }
+                        >
+                          {value}
+                        </MenubarItem>
+                      ))}
                     </MenubarSubContent>
                   </MenubarSub>
                 </MenubarContent>
               </MenubarMenu>
-            </Menubar>
+            </Menubar> */}
             <AddLayer />
           </div>
         </div>
