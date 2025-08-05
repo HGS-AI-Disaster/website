@@ -166,7 +166,7 @@ export const columns = [
     },
   },
   {
-    accessorKey: "dateUpload",
+    accessorKey: "created_at",
     sortingFn: sortByDate,
     header: ({ column }) => (
       <div className="flex items-center gap-1">
@@ -181,7 +181,7 @@ export const columns = [
       </div>
     ),
     cell: ({ row }) => {
-      return <div>{row.getValue("dateUpload")}</div>
+      return <div>{row.getValue("created_at").slice(0, 10)}</div>
     },
   },
   {
@@ -291,6 +291,7 @@ export const columns = [
 ]
 
 function LayerManagement() {
+  const [rawData, setRawData] = useState([])
   const [data, setData] = useState([])
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
@@ -316,20 +317,21 @@ function LayerManagement() {
   })
   const [loading, setLoading] = useState(true)
 
-  const getUniqueValues = (data, key) => {
-    return [...new Set(data.map((item) => item[key]))]
+  const getUniqueValues = (raw, key) => {
+    return [...new Set(raw.map((item) => item[key]))]
   }
 
   useEffect(() => {
     const fetchData = async () => {
       const { data, error } = await supabase
         .from("layers") // nama tabel
-        .select("*") // atau pilih kolom tertentu
+        .select("*")
 
       if (error) {
         console.error("Error fetching data:", error)
       } else {
-        setData(data)
+        setRawData(data) // Simpan data mentah
+        setData(data) // Data awal ke react-table
       }
       setLoading(false)
     }
@@ -356,13 +358,11 @@ function LayerManagement() {
               }
               className="max-w-sm"
             />
-            {/* <Menubar>
+            <Menubar>
               <MenubarMenu>
                 <MenubarTrigger>Filter</MenubarTrigger>
                 <MenubarContent>
-                  <MenubarItem
-                    onClick={() => table.getColumn("layer")?.setFilterValue("")}
-                  >
+                  <MenubarItem onClick={() => table.setColumnFilters([])}>
                     View All
                   </MenubarItem>
                   <MenubarSeparator />
@@ -377,12 +377,13 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(data, "layer").map((value) => (
+                      {getUniqueValues(rawData, "layer").map((value) => (
                         <MenubarItem
                           key={value}
-                          onClick={() =>
+                          onClick={() => {
+                            table.setColumnFilters([])
                             table.getColumn("layer")?.setFilterValue(value)
-                          }
+                          }}
                         >
                           {value}
                         </MenubarItem>
@@ -390,7 +391,7 @@ function LayerManagement() {
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
-                    <MenubarSubTrigger>Categoty</MenubarSubTrigger>
+                    <MenubarSubTrigger>Category</MenubarSubTrigger>
                     <MenubarSubContent>
                       <MenubarItem
                         onClick={() =>
@@ -400,12 +401,13 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(data, "category").map((value) => (
+                      {getUniqueValues(rawData, "category").map((value) => (
                         <MenubarItem
                           key={value}
-                          onClick={() =>
+                          onClick={() => {
+                            table.setColumnFilters([])
                             table.getColumn("category")?.setFilterValue(value)
-                          }
+                          }}
                         >
                           {value}
                         </MenubarItem>
@@ -423,12 +425,13 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(data, "layerDate").map((value) => (
+                      {getUniqueValues(rawData, "layerDate").map((value) => (
                         <MenubarItem
                           key={value}
-                          onClick={() =>
+                          onClick={() => {
+                            table.setColumnFilters([])
                             table.getColumn("layerDate")?.setFilterValue(value)
-                          }
+                          }}
                         >
                           {value}
                         </MenubarItem>
@@ -438,22 +441,22 @@ function LayerManagement() {
                   <MenubarSub>
                     <MenubarSubTrigger>Date uploaded</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem
-                        onClick={() =>
-                          table.getColumn("dateUpload")?.setFilterValue("")
-                        }
-                      >
+                      <MenubarItem onClick={() => table.setColumnFilters([])}>
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(data, "dateUpload").map((value) => (
+                      {getUniqueValues(rawData, "created_at").map((value) => (
                         <MenubarItem
                           key={value}
-                          onClick={() =>
-                            table.getColumn("dateUpload")?.setFilterValue(value)
-                          }
+                          onClick={() => {
+                            table.setColumnFilters([])
+                            table.getColumn("created_at")?.setFilterValue(value)
+                          }}
                         >
-                          {value}
+                          {value.slice(0, 10)}
+                          <span className="text-xs text-gray-500">
+                            at {value.slice(11, 16)}
+                          </span>
                         </MenubarItem>
                       ))}
                     </MenubarSubContent>
@@ -469,12 +472,13 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(data, "source").map((value) => (
+                      {getUniqueValues(rawData, "source").map((value) => (
                         <MenubarItem
                           key={value}
-                          onClick={() =>
+                          onClick={() => {
+                            table.setColumnFilters([])
                             table.getColumn("source")?.setFilterValue(value)
-                          }
+                          }}
                         >
                           {value}
                         </MenubarItem>
@@ -484,20 +488,17 @@ function LayerManagement() {
                   <MenubarSub>
                     <MenubarSubTrigger>Visibility</MenubarSubTrigger>
                     <MenubarSubContent>
-                      <MenubarItem
-                        onClick={() =>
-                          table.getColumn("visibility")?.setFilterValue("")
-                        }
-                      >
+                      <MenubarItem onClick={() => table.setColumnFilters([])}>
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(data, "visibility").map((value) => (
+                      {getUniqueValues(rawData, "visibility").map((value) => (
                         <MenubarItem
                           key={value}
-                          onClick={() =>
+                          onClick={() => {
+                            table.setColumnFilters([])
                             table.getColumn("visibility")?.setFilterValue(value)
-                          }
+                          }}
                         >
                           {value}
                         </MenubarItem>
@@ -506,7 +507,7 @@ function LayerManagement() {
                   </MenubarSub>
                 </MenubarContent>
               </MenubarMenu>
-            </Menubar> */}
+            </Menubar>
             <AddLayer />
           </div>
         </div>
