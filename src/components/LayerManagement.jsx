@@ -120,6 +120,7 @@ export const columns = [
             variant="ghost"
             className="hover:bg-gray-200 !p-1 h-fit"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            // onClick={() => console.log(column)}
           >
             <ArrowUpDown />
           </Button>
@@ -192,7 +193,7 @@ export const columns = [
         <Button
           variant="ghost"
           className="hover:bg-gray-200 !p-1 h-fit"
-          // onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
           <ArrowUpDown />
         </Button>
@@ -551,12 +552,21 @@ function LayerManagement() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell
-                      colSpan={columns.length}
-                      className="h-24 text-center"
-                    >
-                      No results.
-                    </TableCell>
+                    {loading ? (
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        Loading...
+                      </TableCell>
+                    ) : (
+                      <TableCell
+                        colSpan={columns.length}
+                        className="h-24 text-center"
+                      >
+                        No results.
+                      </TableCell>
+                    )}
                   </TableRow>
                 )}
               </TableBody>

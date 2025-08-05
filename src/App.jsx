@@ -24,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import GoogleMaps from "./components/GoogleMaps"
 
 function App() {
   const [isLogin, setIsLogin] = useState(false)
@@ -116,9 +117,10 @@ function App() {
             </Dialog>
           )}
         </div>
-        <Map />
+        <GoogleMaps />
         <Navigation />
       </div>
+      {/* <GoogleMaps /> */}
       {isLogin && <LayerManagement />}
     </>
   )
