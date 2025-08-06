@@ -12,7 +12,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import Map from "./components/Map"
 import Navigation from "./components/Navigation"
 import { useState } from "react"
 import LayerManagement from "./components/LayerManagement"

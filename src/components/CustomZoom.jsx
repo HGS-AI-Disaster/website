@@ -1,43 +1,43 @@
-import { useMap } from "react-leaflet"
+// import { useMap } from "react-leaflet"
 import { Button } from "./ui/button"
 import { Navigation2 } from "lucide-react"
-import { useState } from "react"
+// import { useState } from "react"
 
 export default function CustomZoom() {
-  const map = useMap()
+  // const map = useMap()
 
-  const zoomIn = () => map.setZoom(map.getZoom() + 1)
-  const zoomOut = () => map.setZoom(map.getZoom() - 1)
+  // const zoomIn = () => map.setZoom(map.getZoom() + 1)
+  // const zoomOut = () => map.setZoom(map.getZoom() - 1)
 
-  const [locating, setLocating] = useState(false)
+  // const [locating, setLocating] = useState(false)
 
-  const handleLocate = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation tidak didukung di browser ini.")
-      return
-    }
+  // const handleLocate = () => {
+  //   if (!navigator.geolocation) {
+  //     alert("Geolocation tidak didukung di browser ini.")
+  //     return
+  //   }
 
-    setLocating(true)
+  //   setLocating(true)
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords
-        map.setView([latitude, longitude], 15) // zoom ke lokasi user
-        L.marker([latitude, longitude]).addTo(map).openPopup()
-        setLocating(false)
-      },
-      (error) => {
-        alert("Gagal mendapatkan lokasi.")
-        console.error(error)
-        setLocating(false)
-      }
-    )
-  }
+  //   navigator.geolocation.getCurrentPosition(
+  //     (position) => {
+  //       const { latitude, longitude } = position.coords
+  //       map.setView([latitude, longitude], 15) // zoom ke lokasi user
+  //       L.marker([latitude, longitude]).addTo(map).openPopup()
+  //       setLocating(false)
+  //     },
+  //     (error) => {
+  //       alert("Gagal mendapatkan lokasi.")
+  //       console.error(error)
+  //       setLocating(false)
+  //     }
+  //   )
+  // }
 
   return (
     <div className="absolute bottom-24 right-8 z-[999] flex flex-col gap-2 justify-end items-end">
       <Button
-        onClick={zoomIn}
+        // onClick={zoomIn}
         className="cursor-pointer  bg-white hover:bg-gray-200 text-black font-bold"
       >
         <svg
@@ -60,7 +60,7 @@ export default function CustomZoom() {
         </svg>
       </Button>
       <Button
-        onClick={zoomOut}
+        // onClick={zoomOut}
         className=" cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
       >
         <svg
@@ -86,8 +86,8 @@ export default function CustomZoom() {
         className={
           "w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
         }
-        onClick={handleLocate}
-        disabled={locating}
+        // onClick={handleLocate}
+        // disabled={locating}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"

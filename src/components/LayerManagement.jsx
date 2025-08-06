@@ -44,59 +44,6 @@ import AddLayer from "./AddLayer"
 import EditLayer from "./EditLayer"
 import { supabase } from "../lib/supabaseClient"
 
-// const data = [
-//   {
-//     id: "m5gr84i9",
-//     layer: "Layer 1",
-//     category: "Cloud Layer",
-//     layerDate: "07/08/2025",
-//     dateUpload: "23/07/2025",
-//     description: "Lorem ipsum dolor sit amet.",
-//     source: "Chiba University",
-//     visibility: "public",
-//   },
-//   {
-//     id: "3u1reuv4",
-//     layer: "Layer 2",
-//     category: "Chiba University",
-//     layerDate: "02/08/2025",
-//     dateUpload: "24/07/2025",
-//     description: "Lorem ipsum dolor sit amet.",
-//     source: "Chiba University",
-//     visibility: "public",
-//   },
-//   {
-//     id: "derv1ws0",
-//     layer: "Layer 3",
-//     category: "Chiba University",
-//     layerDate: "03/08/2025",
-//     dateUpload: "25/07/2025",
-//     description: "Lorem ipsum dolor sit amet.",
-//     source: "Chiba University",
-//     visibility: "private",
-//   },
-//   {
-//     id: "5kma53ae",
-//     layer: "Layer 4",
-//     category: "Earthquake Layer",
-//     layerDate: "01/08/2025",
-//     dateUpload: "26/07/2025",
-//     description: "Lorem ipsum dolor sit amet.",
-//     source: "Chiba University",
-//     visibility: "public",
-//   },
-//   {
-//     id: "bhqecj4p",
-//     layer: "Layer 5",
-//     category: "Typhoon Layer",
-//     layerDate: "04/08/2025",
-//     dateUpload: "27/07/2025",
-//     description: "Lorem ipsum dolor sit amet.",
-//     source: "Chiba University",
-//     visibility: "private",
-//   },
-// ]
-
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
     const [day, month, year] = str.split("/")
