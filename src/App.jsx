@@ -24,34 +24,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import GoogleMaps from "./components/GoogleMaps"
+import Map from "./components/Map"
 
 function App() {
   const [isLogin, setIsLogin] = useState(false)
-  const [layers, setLayers] = useState({})
-  const [error, setError] = useState(null)
 
   function login() {
     if (!isLogin) {
       setIsLogin(true)
     }
   }
-
-  useEffect(() => {
-    const getLayers = async () => {
-      try {
-        const res = await fetch("http://localhost:3000/api/layer")
-        const json = await res.json()
-        if (!res.ok) throw new Error(json.message || "Gagal fetch layer")
-        setLayers(json.data)
-      } catch (err) {
-        setError(err.message)
-      } finally {
-        console.log(layers)
-      }
-    }
-
-    getLayers()
-  }, [])
 
   return (
     <>
@@ -135,10 +117,8 @@ function App() {
             </Dialog>
           )}
         </div>
-        <GoogleMaps />
-        <Navigation />
+        <Map />
       </div>
-      {/* <GoogleMaps /> */}
       {isLogin && <LayerManagement />}
     </>
   )

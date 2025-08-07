@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/accordion"
 import { Input } from "@/components/ui/input"
 
-function Navigation() {
+function Navigation({ layers, currentLayer, setCurrentLayer }) {
   return (
-    <div className="navigations flex-1 flex flex-col">
+    <div className="navigations flex-1 flex flex-col h-full">
       <div className="top w-full flex flex-1 justify-between">
         <div className="layers relative flex-1 m-8 z-20">
           <Accordion
@@ -28,45 +28,56 @@ function Navigation() {
             className="w-full absolute shadow-md rounded-lg bg-gray-50"
             defaultValue="item-1"
           >
-            <AccordionItem value="item-1">
-              <AccordionTrigger className={"px-2"}>
-                Cloud Layer
-              </AccordionTrigger>
-              <AccordionContent className="flex flex-col text-balance">
-                <a href="">
-                  <div className="text px-2 py-2 hover:bg-gray-100">
-                    Cloud Layer
-                  </div>
-                </a>
-              </AccordionContent>
-            </AccordionItem>
-            <AccordionItem value="item-2">
-              <AccordionTrigger className={"px-2"}>
-                Disaster Prediction
-              </AccordionTrigger>
-              <AccordionContent className="flex flex-col text-balance">
-                <a href="">
-                  <div className="text px-2 py-2 hover:bg-gray-100">
-                    Typhoon Layer
-                  </div>
-                </a>
-                <a href="">
-                  <div className="text px-2 py-2 hover:bg-gray-100">
-                    Heavy Rain Layer
-                  </div>
-                </a>
-                <a href="">
-                  <div className="text px-2 py-2 hover:bg-gray-100">
-                    Earthquake Layer
-                  </div>
-                </a>
-                <a href="">
-                  <div className="text px-2 py-2 hover:bg-gray-100">
-                    Flood Layer
-                  </div>
-                </a>
-              </AccordionContent>
-            </AccordionItem>
+            {layers.some((layer) => layer.category === "Cloud Layer") && (
+              <AccordionItem value="item-1">
+                <AccordionTrigger className="px-2">
+                  Cloud Layer
+                </AccordionTrigger>
+                <AccordionContent className="flex flex-col text-balance">
+                  {layers
+                    .filter((layer) => layer.category === "Cloud Layer")
+                    .map((layer, index) => (
+                      <a
+                        key={index}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setCurrentLayer(layer)
+                          console.log(layer.layer)
+                        }}
+                      >
+                        <div className="text px-2 py-2 hover:bg-gray-100">
+                          {layer.layer}
+                        </div>
+                      </a>
+                    ))}
+                </AccordionContent>
+              </AccordionItem>
+            )}
+            {layers.some((layer) => layer.category === "Disaster Layer") && (
+              <AccordionItem value="item-2">
+                <AccordionTrigger className="px-2">
+                  Disaster Prediction
+                </AccordionTrigger>
+                <AccordionContent className="flex flex-col text-balance">
+                  {layers
+                    .filter((layer) => layer.category === "Disaster Layer")
+                    .map((layer, index) => (
+                      <a
+                        key={index}
+                        onClick={(e) => {
+                          e.preventDefault()
+                          setCurrentLayer(layer)
+                          console.log(layer.layer)
+                        }}
+                      >
+                        <div className="text px-2 py-2 hover:bg-gray-100">
+                          {layer.layer}
+                        </div>
+                      </a>
+                    ))}
+                </AccordionContent>
+              </AccordionItem>
+            )}
             <AccordionItem value="item-3">
               <AccordionTrigger className={"px-2"}>
                 Chiba University

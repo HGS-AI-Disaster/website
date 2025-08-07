@@ -17,7 +17,7 @@ const center = {
   lng: 140.1065,
 } // Kota Chiba
 
-function GoogleMaps() {
+function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -57,8 +57,7 @@ function GoogleMaps() {
       }
     })
 
-    const geojsonUrl =
-      "https://vmnpufbubicxnqzjzqhp.supabase.co/storage/v1/object/public/layer/typhoon_layer.geojson"
+    const geojsonUrl = currentLayer.file_url
 
     fetch(geojsonUrl)
       .then((res) => res.json())
@@ -108,6 +107,27 @@ function GoogleMaps() {
       alert("Geolocation tidak didukung oleh browser ini.")
     }
   }
+
+  useEffect(() => {
+    if (!mapRef.current || !currentLayer?.file_url) return
+
+    const map = mapRef.current
+
+    // Clear previous GeoJSON layer
+    map.data.forEach((feature) => {
+      map.data.remove(feature)
+    })
+
+    // Load new GeoJSON layer
+    fetch(currentLayer.file_url)
+      .then((res) => res.json())
+      .then((data) => {
+        map.data.addGeoJson(data)
+      })
+      .catch((err) => {
+        console.error("Failed to load GeoJSON:", err)
+      })
+  }, [currentLayer])
 
   return isLoaded ? (
     <div className="z-10">
