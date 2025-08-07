@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import Navigation from "./components/Navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import LayerManagement from "./components/LayerManagement"
 import {
   DropdownMenu,
@@ -27,12 +27,31 @@ import GoogleMaps from "./components/GoogleMaps"
 
 function App() {
   const [isLogin, setIsLogin] = useState(false)
+  const [layers, setLayers] = useState({})
+  const [error, setError] = useState(null)
 
   function login() {
     if (!isLogin) {
       setIsLogin(true)
     }
   }
+
+  useEffect(() => {
+    const getLayers = async () => {
+      try {
+        const res = await fetch("http://localhost:3000/api/layer")
+        const json = await res.json()
+        if (!res.ok) throw new Error(json.message || "Gagal fetch layer")
+        setLayers(json.data)
+      } catch (err) {
+        setError(err.message)
+      } finally {
+        console.log(layers)
+      }
+    }
+
+    getLayers()
+  }, [])
 
   return (
     <>

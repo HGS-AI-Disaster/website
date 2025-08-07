@@ -58,7 +58,7 @@ function GoogleMaps() {
     })
 
     const geojsonUrl =
-      "https://vmnpufbubicxnqzjzqhp.supabase.co/storage/v1/object/public/layer//cloud_layer.geojson"
+      "https://vmnpufbubicxnqzjzqhp.supabase.co/storage/v1/object/public/layer/typhoon_layer.geojson"
 
     fetch(geojsonUrl)
       .then((res) => res.json())
