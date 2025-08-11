@@ -21,7 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useForm } from "react-hook-form"
 import { Pencil } from "lucide-react"
 
-export default function EditLayer() {
+export default function EditLayer({ layer }) {
   const {
     register,
     handleSubmit,
@@ -74,6 +74,7 @@ export default function EditLayer() {
             <Input
               id="layerName"
               //   placeholder="Layer Name"
+              defaultValue={layer.original.layer}
               {...register("name", { required: true })}
             />
             {errors.name && (
@@ -122,6 +123,7 @@ export default function EditLayer() {
             <Input
               id="source"
               {...register("source")}
+              defaultValue={layer.original.source}
             />
           </div>
 

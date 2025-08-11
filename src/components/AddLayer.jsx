@@ -18,10 +18,12 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
+import { useState } from "react"
 
 export default function AddLayer() {
   const {
+    control,
     register,
     handleSubmit,
     setValue,
@@ -29,9 +31,33 @@ export default function AddLayer() {
     formState: { errors },
   } = useForm()
 
+  const [fileName, setFileName] = useState("")
+
   const onSubmit = (data) => {
-    console.log(data)
+    const formdata = new FormData()
+    formdata.append("layer", data.layer)
+    formdata.append("category", data.category)
+    formdata.append("layerDate", data.date)
+    formdata.append("source", data.source)
+    formdata.append("visibility", data.visibility)
+    formdata.append("description", data.description || "")
+    formdata.append("file", data.file)
+
+    // console.log(typeof data.date)
+
+    const requestOptions = {
+      method: "POST",
+      body: formdata,
+      redirect: "follow",
+    }
+
+    fetch("http://localhost:3000/api/layer", requestOptions)
+      .then((response) => response.text())
+      .then((result) => console.log(result))
+      .catch((error) => console.error(error))
+
     reset()
+    setFileName("")
   }
 
   return (
@@ -69,27 +95,47 @@ export default function AddLayer() {
               htmlFor="file"
               className="cursor-pointer block"
             >
-              Upload file .tiff or GeoJSON
+              Upload file GeoJSON
             </Label>
-            <Input
-              type="file"
-              accept=".tiff,.geojson"
-              {...register("file", { required: true })}
-              className="hidden"
-              id="file"
+            <Controller
+              name="file"
+              control={control}
+              rules={{ required: "File is required" }}
+              render={({ field }) => (
+                <>
+                  <Input
+                    type="file"
+                    accept=".geojson"
+                    className="hidden"
+                    id="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      field.onChange(file)
+                      setFileName(file ? file.name : "")
+                    }}
+                  />
+                  {fileName && (
+                    <p className="text-gray-600 text-xs mt-2">
+                      Selected: {fileName}
+                    </p>
+                  )}
+                  {errors.file && (
+                    <p className="text-red-500 text-xs mt-1">
+                      {errors.file.message}
+                    </p>
+                  )}
+                </>
+              )}
             />
-            {errors.file && (
-              <p className="text-red-500 text-xs mt-1">File is required</p>
-            )}
           </div>
 
           {/* Layer Name */}
           <div className="grid w-full items-center gap-2">
-            <Label htmlFor="layerName">Layer Name</Label>
+            <Label htmlFor="layer">Layer Name</Label>
             <Input
-              id="layerName"
+              id="layer"
               //   placeholder="Layer Name"
-              {...register("name", { required: true })}
+              {...register("layer", { required: true })}
             />
             {errors.name && (
               <p className="text-red-500 text-xs">Layer name is required</p>
@@ -108,9 +154,11 @@ export default function AddLayer() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="satellite">Satellite</SelectItem>
-                <SelectItem value="flood">Flood</SelectItem>
-                <SelectItem value="earthquake">Earthquake</SelectItem>
+                <SelectItem value="cloud-layer">Cloud Layer</SelectItem>
+                <SelectItem value="disaster-layer">Disaster Layer</SelectItem>
+                <SelectItem value="chiba-university">
+                  Chiba University
+                </SelectItem>
               </SelectContent>
             </Select>
             {errors.category && (
@@ -163,9 +211,9 @@ export default function AddLayer() {
 
           {/* Description */}
           <div className="grid w-full items-center gap-2">
-            <Label htmlFor="desc">Description</Label>
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id="desc"
+              id="description"
               {...register("description")}
             />
           </div>

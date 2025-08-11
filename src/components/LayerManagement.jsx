@@ -164,7 +164,7 @@ export const columns = [
     cell: ({ row }) => {
       return (
         <div className="action flex gap-2">
-          <EditLayer />
+          <EditLayer layer={row} />
           <Dialog>
             <DialogTrigger>
               <Eye className="size-[1rem] cursor-pointer" />
