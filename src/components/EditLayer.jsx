@@ -6,6 +6,8 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -18,25 +20,82 @@ import {
   SelectItem,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { Pencil } from "lucide-react"
+import { useState } from "react"
+import { useEffect } from "react"
+import { toast } from "sonner"
 
-export default function EditLayer({ layer }) {
+export default function EditLayer({ layer, setEdited }) {
   const {
+    control,
     register,
     handleSubmit,
     setValue,
     reset,
     formState: { errors },
   } = useForm()
+  const [open, setOpen] = useState(false) // kontrol buka tutup dialog
+
+  const [fileName, setFileName] = useState("")
 
   const onSubmit = (data) => {
     console.log(data)
+
+    const formdata = new FormData()
+    formdata.append("layer", data.name)
+    formdata.append("category", data.category || layer.original.category)
+    formdata.append("layerDate", data.date)
+    formdata.append("source", data.source)
+    formdata.append("visibility", data.visibility || layer.original.visibility)
+    formdata.append("description", data.description)
+    data.file && formdata.append("file", data.file)
+
+    const requestOptions = {
+      method: "PUT",
+      body: formdata,
+      redirect: "follow",
+    }
+
+    toast.promise(
+      fetch(
+        `http://localhost:3000/api/layer/${layer.original.id}`,
+        requestOptions
+      ).then((response) => {
+        if (!response.ok) {
+          throw new Error("Failed to update layer")
+        }
+        return response.text()
+      }),
+      {
+        loading: "Updating layer...",
+        success: () => ({
+          description: "Refresh the page to view the changes",
+          action: {
+            label: "Refresh",
+            onClick: () => window.location.reload(),
+          },
+          message: "Layer has been updated",
+          duration: 15000,
+        }),
+        error: (err) => ({
+          message: "Error",
+          description: err.message || "Failed to update layer",
+        }),
+      }
+    )
+
     reset()
+    // setEdited((value) => !value)
+    setFileName("")
+    setOpen(false)
   }
 
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+    >
       <DialogTrigger asChild>
         <Pencil className="size-[1rem] cursor-pointer" />
       </DialogTrigger>
@@ -49,19 +108,46 @@ export default function EditLayer({ layer }) {
           className="space-y-4 mt-4"
         >
           {/* Upload File */}
-          <div className="border-3 border-dashed rounded-md p-4 text-sm text-gray-400 text-center flex flex-col justify-center items-center h-[100px]">
+          <div className="border-3 relative border-dashed rounded-md text-sm text-gray-400 text-center flex flex-col justify-center items-center h-[100px]">
             <Label
               htmlFor="file"
-              className="cursor-pointer block"
+              className="cursor-pointer flex justify-center items-center h-full w-full "
             >
-              Upload file .tiff or GeoJSON
+              Update file GeoJSON
             </Label>
-            <Input
-              type="file"
-              accept=".tiff,.geojson"
-              {...register("file", { required: true })}
-              className="hidden"
-              id="file"
+
+            <Controller
+              name="file"
+              control={control}
+              render={({ field }) => (
+                <>
+                  <Input
+                    type="file"
+                    accept=".geojson"
+                    className="hidden"
+                    id="file"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      field.onChange(file)
+                      setFileName(file ? file.name : "")
+                    }}
+                  />
+                  <p className="text-gray-600 text-xs mt-2 absolute top-12">
+                    Selected:{" "}
+                    {fileName ? (
+                      fileName
+                    ) : (
+                      <a
+                        href={layer.original.file_url}
+                        className="text-blue-500 underline"
+                      >
+                        {layer.original.file_url.split("/").pop()}
+                      </a>
+                    )}
+                  </p>
+                  {/* <button onClick={() => console.log(layer)}>test</button> */}
+                </>
+              )}
             />
             {errors.file && (
               <p className="text-red-500 text-xs mt-1">File is required</p>
@@ -70,9 +156,9 @@ export default function EditLayer({ layer }) {
 
           {/* Layer Name */}
           <div className="grid w-full items-center gap-2">
-            <Label htmlFor="layerName">Layer Name</Label>
+            <Label htmlFor="layer">Layer Name</Label>
             <Input
-              id="layerName"
+              id="layer"
               //   placeholder="Layer Name"
               defaultValue={layer.original.layer}
               {...register("name", { required: true })}
@@ -89,14 +175,17 @@ export default function EditLayer({ layer }) {
               id="category"
               className="w-full"
               onValueChange={(val) => setValue("category", val)}
+              defaultValue={layer.original.category}
             >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="satellite">Satellite</SelectItem>
-                <SelectItem value="flood">Flood</SelectItem>
-                <SelectItem value="earthquake">Earthquake</SelectItem>
+                <SelectItem value="Cloud Layer">Cloud Layer</SelectItem>
+                <SelectItem value="Disaster Layer">Disaster Layer</SelectItem>
+                <SelectItem value="Chiba University">
+                  Chiba University
+                </SelectItem>
               </SelectContent>
             </Select>
             {errors.category && (
@@ -110,7 +199,10 @@ export default function EditLayer({ layer }) {
             <Input
               id="layerDate"
               type="date"
-              {...register("date", { required: true })}
+              defaultValue={layer.original.layerDate}
+              {...register("date", {
+                required: true,
+              })}
             />
             {errors.date && (
               <p className="text-red-500 text-xs">Date is required</p>
@@ -133,6 +225,7 @@ export default function EditLayer({ layer }) {
             <Select
               id="visibility"
               className="w-full"
+              defaultValue={layer.original.visibility}
               onValueChange={(val) => setValue("visibility", val)}
             >
               <SelectTrigger className={"w-full"}>
@@ -153,18 +246,23 @@ export default function EditLayer({ layer }) {
             <Label htmlFor="desc">Description</Label>
             <Textarea
               id="desc"
+              defaultValue={layer.original.description || ""}
               {...register("description")}
             />
           </div>
 
-          {/* Submit */}
-          <Button
-            type="submit"
-            className="w-full bg-blue-900 hover:bg-blue-950 text-white mt-2"
-          >
-            Update Layer
-          </Button>
+          <div className="w-full flex justify-end gap-4">
+            <Button variant="outline">Cancel</Button>
+            <Button
+              type="submit"
+              onClick={() => onSubmit()}
+              className=" bg-blue-900 hover:bg-blue-950 text-white"
+            >
+              Update Layer
+            </Button>
+          </div>
         </form>
+        {/* Submit */}
       </DialogContent>
     </Dialog>
   )

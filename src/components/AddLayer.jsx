@@ -20,8 +20,9 @@ import {
 import { Textarea } from "@/components/ui/textarea"
 import { useForm, Controller } from "react-hook-form"
 import { useState } from "react"
+import { toast } from "sonner"
 
-export default function AddLayer() {
+export default function AddLayer({ setEdited }) {
   const {
     control,
     register,
@@ -31,6 +32,7 @@ export default function AddLayer() {
     formState: { errors },
   } = useForm()
 
+  const [open, setOpen] = useState(false) // kontrol buka tutup dialog
   const [fileName, setFileName] = useState("")
 
   const onSubmit = (data) => {
@@ -51,17 +53,43 @@ export default function AddLayer() {
       redirect: "follow",
     }
 
-    fetch("http://localhost:3000/api/layer", requestOptions)
-      .then((response) => response.text())
-      .then((result) => console.log(result))
-      .catch((error) => console.error(error))
+    toast.promise(
+      fetch("http://localhost:3000/api/layer", requestOptions).then(
+        (response) => {
+          if (!response.ok) {
+            throw new Error("Failed to create layer")
+          }
+          return response.text()
+        }
+      ),
+      {
+        loading: "Creating layer...",
+        success: () => ({
+          description: "Refresh the page to view the changes",
+          action: {
+            label: "Refresh",
+            onClick: () => window.location.reload(),
+          },
+          message: "Layer has been created",
+          duration: 15000,
+        }),
+        error: (err) => ({
+          message: "Error",
+          description: err.message || "Failed to create layer",
+        }),
+      }
+    )
 
     reset()
+    setOpen(false)
     setFileName("")
   }
 
   return (
-    <Dialog>
+    <Dialog
+      open={open}
+      onOpenChange={setOpen}
+    >
       <DialogTrigger asChild>
         <Button
           className={
@@ -154,9 +182,9 @@ export default function AddLayer() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="cloud-layer">Cloud Layer</SelectItem>
-                <SelectItem value="disaster-layer">Disaster Layer</SelectItem>
-                <SelectItem value="chiba-university">
+                <SelectItem value="Cloud Layer">Cloud Layer</SelectItem>
+                <SelectItem value="Disaster Layer">Disaster Layer</SelectItem>
+                <SelectItem value="Chiba University">
                   Chiba University
                 </SelectItem>
               </SelectContent>

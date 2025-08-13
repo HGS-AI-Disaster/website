@@ -10,6 +10,16 @@ import {
   NavigationMenuViewport,
 } from "@/components/ui/navigation-menu"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -166,34 +176,60 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
       </div>
       <div className="buttom flex-1 flex flex-col justify-end">
         <div className="time-series flex mb-8 flex-col items-center z-20">
-          <NavigationMenu className={"bg-gray-50 h-fit px-1 py-1 rounded-lg"}>
-            <NavigationMenuList className={"gap-1"}>
+          <div className={"bg-gray-50 h-fit px-4 pt-[6px] rounded-lg"}>
+            <div className={"flex gap-2"}>
               {uniqueDates.map((date) => {
                 const sampleLayer = layers.find(
                   (layer) => layer.layerDate === date
                 )
-
                 return (
-                  <NavigationMenuItem key={date}>
-                    <NavigationMenuLink
+                  <DropdownMenu key={date}>
+                    <DropdownMenuTrigger
                       onClick={() => {
                         setCurrentDate(sampleLayer.layerDate)
                         setCurrentLayer(sampleLayer)
                       }}
-                      className={`cursor-pointer px-4 bg-gray-50 hover:bg-gray-200 ${
-                        date === currentDate ? "font-bold" : "font-normal"
-                      }`}
+                      className={`cursor-pointer relative`}
                     >
-                      {new Date(date).toLocaleDateString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                      })}
-                    </NavigationMenuLink>
-                  </NavigationMenuItem>
+                      <div className="mb-[6px] bg-gray-50 px-4 py-1 text-sm hover:bg-gray-200 w-full">
+                        {new Date(date).toLocaleDateString("en-GB", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </div>
+                      {date === currentDate && (
+                        <div className="h-[6px] w-full absolute bottom-0 left-0 bg-slate-600"></div>
+                      )}
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className={"mb-2"}>
+                      <DropdownMenuItem>Gempa 1, 12.00</DropdownMenuItem>
+                      <DropdownMenuItem>Gempa 2, 15.00</DropdownMenuItem>
+                      <DropdownMenuItem>Gempa 3, 17.00</DropdownMenuItem>
+                    </DropdownMenuContent>
+                    {/* <NavigationMenuItem key={date}>
+                        <NavigationMenuLink
+                          onClick={() => {
+                            setCurrentDate(sampleLayer.layerDate)
+                            setCurrentLayer(sampleLayer)
+                          }}
+                          className={`cursor-pointer px-4 bg-gray-50 hover:bg-gray-50 relative`}
+                        >
+                          <div className="mb-1">
+                            {new Date(date).toLocaleDateString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                            })}
+                          </div>
+                          {date === currentDate && (
+                            <div className="h-[6px] w-full absolute bottom-0 left-0 bg-slate-600"></div>
+                          )}
+                        </NavigationMenuLink>
+                      </NavigationMenuItem> */}
+                  </DropdownMenu>
                 )
               })}
-            </NavigationMenuList>
-          </NavigationMenu>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -1,44 +1,17 @@
 import "./index.css"
-import { Button } from "./components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import Navigation from "./components/Navigation"
+
 import { useEffect, useState } from "react"
 import LayerManagement from "./components/LayerManagement"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+
 import GoogleMaps from "./components/GoogleMaps"
 import Map from "./components/Map"
+import Navbar from "./components/Navbar"
 
 function App() {
-  const [isLogin, setIsLogin] = useState(false)
-
-  function login() {
-    if (!isLogin) {
-      setIsLogin(true)
-    }
-  }
-
   return (
     <>
       <div className="h-screen flex flex-col">
-        <div className="navbar w-full py-4 px-8 flex justify-between z-20 bg-gray-50 shadow-md">
+        {/* <div className="navbar w-full py-4 px-8 flex justify-between z-20 bg-gray-50 shadow-md">
           <div className="text text-2xl font-semibold">
             AI Disaster Mitigation Platform
           </div>
@@ -116,10 +89,11 @@ function App() {
               </form>
             </Dialog>
           )}
-        </div>
+        </div> */}
+        <Navbar />
         <Map />
       </div>
-      {isLogin && <LayerManagement />}
+      <LayerManagement />
     </>
   )
 }

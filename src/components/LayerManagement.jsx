@@ -43,6 +43,9 @@ import {
 import AddLayer from "./AddLayer"
 import EditLayer from "./EditLayer"
 import { supabase } from "../lib/supabaseClient"
+import { toast } from "sonner"
+import EditVisibility from "./EditVisibility"
+import DeleteLayer from "./DeleteLayer"
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
@@ -165,73 +168,8 @@ export const columns = [
       return (
         <div className="action flex gap-2">
           <EditLayer layer={row} />
-          <Dialog>
-            <DialogTrigger>
-              <Eye className="size-[1rem] cursor-pointer" />
-            </DialogTrigger>
-            {row.original.visibility === "public" ? (
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Set visibility to private?</DialogTitle>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </DialogClose>
-                  <Button
-                    type="submit"
-                    onClick={() => (row.original.visibility = "private")}
-                  >
-                    Yes
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            ) : (
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Set visibility to public?</DialogTitle>
-                </DialogHeader>
-                <DialogFooter>
-                  <DialogClose asChild>
-                    <Button variant="outline">Cancel</Button>
-                  </DialogClose>
-                  <Button
-                    type="submit"
-                    onClick={() => (row.original.visibility = "public")}
-                  >
-                    Yes
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            )}
-          </Dialog>
-          <Dialog>
-            <DialogTrigger>
-              <Trash2
-                className="size-[1rem] cursor-pointer"
-                stroke="red"
-              />
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Delete layer</DialogTitle>
-                <DialogDescription>
-                  Are you sure to delete {row.original.layer}?{" "}
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button
-                  type="submit"
-                  variant={"destructive"}
-                >
-                  Delete
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <EditVisibility layer={row} />
+          <DeleteLayer layer={row} />
         </div>
       )
     },
@@ -245,6 +183,7 @@ function LayerManagement() {
   const [columnFilters, setColumnFilters] = useState([])
   const [columnVisibility, setColumnVisibility] = useState({})
   const [rowSelection, setRowSelection] = useState({})
+
   const table = useReactTable({
     data,
     columns,
@@ -269,29 +208,29 @@ function LayerManagement() {
     return [...new Set(raw.map((item) => item[key]))]
   }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data, error } = await supabase
-        .from("layers") // nama tabel
-        .select("*")
-
-      if (error) {
-        console.error("Error fetching data:", error)
-      } else {
-        setRawData(data) // Simpan data mentah
-        setData(data) // Data awal ke react-table
-      }
-      setLoading(false)
+  const fetchData = async () => {
+    const requestOptions = {
+      method: "GET",
+      redirect: "follow",
     }
 
-    fetchData()
+    fetch("http://localhost:3000/api/layer", requestOptions)
+      .then((response) => response.json())
+      .then((result) => {
+        setData(result.data)
+        setRawData(result.data)
+      })
+      .catch((error) => console.error(error))
+      .finally(() => setLoading(false))
+  }
 
-    console.log(data)
+  useEffect(() => {
+    fetchData()
   }, [])
 
   return (
     <div className="bg-gray-200 p-12">
-      <div className="bg-gray-50 py-8 px-12 rounded-lg">
+      <div className="bg-gray-50 py-8 px-12 rounded-lg  overflow-x-auto">
         <div className="heading flex items-center">
           <div className="title flex-1">
             <div className="text-xl font-semibold">Layer Management</div>
