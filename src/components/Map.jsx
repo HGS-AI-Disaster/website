@@ -34,11 +34,11 @@ function Map() {
       ) : (
         <>
           {" "}
-          <GoogleMaps
+          {/* <GoogleMaps
             layers={layers}
             currentLayer={currentLayer}
             setCurrentLayer={setCurrentLayer}
-          />
+          /> */}
           <Navigation
             layers={layers}
             currentLayer={currentLayer}
