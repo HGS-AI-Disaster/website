@@ -98,7 +98,7 @@ export const columns = [
     cell: ({ row }) => <div>{row.getValue("category")}</div>,
   },
   {
-    accessorKey: "layerDate",
+    accessorKey: "layer_date",
     sortingFn: sortByDate,
     header: ({ column }) => (
       <div className="flex items-center gap-1">
@@ -113,7 +113,7 @@ export const columns = [
       </div>
     ),
     cell: ({ row }) => {
-      return <div>{row.getValue("layerDate")}</div>
+      return <div>{row.getValue("layer_date")}</div>
     },
   },
   {
@@ -306,18 +306,18 @@ function LayerManagement() {
                     <MenubarSubContent>
                       <MenubarItem
                         onClick={() =>
-                          table.getColumn("layerDate")?.setFilterValue("")
+                          table.getColumn("layer_date")?.setFilterValue("")
                         }
                       >
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(rawData, "layerDate").map((value) => (
+                      {getUniqueValues(rawData, "layer_date").map((value) => (
                         <MenubarItem
                           key={value}
                           onClick={() => {
                             table.setColumnFilters([])
-                            table.getColumn("layerDate")?.setFilterValue(value)
+                            table.getColumn("layer_date")?.setFilterValue(value)
                           }}
                         >
                           {value}

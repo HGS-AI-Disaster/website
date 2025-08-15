@@ -45,7 +45,7 @@ function DeleteLayer({ layer }) {
               const formdata = new FormData()
               formdata.append("layer", layer.original.layer)
               formdata.append("category", layer.original.category)
-              formdata.append("layerDate", layer.original.layerDate)
+              formdata.append("layer_date", layer.original.layer_date)
               formdata.append("source", layer.original.source)
               formdata.append("visibility", layer.original.visibility)
               formdata.append("description", layer.original.description)

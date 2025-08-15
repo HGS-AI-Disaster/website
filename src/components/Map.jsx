@@ -33,12 +33,11 @@ function Map() {
         <p>Loading...</p>
       ) : (
         <>
-          {" "}
-          {/* <GoogleMaps
+          <GoogleMaps
             layers={layers}
             currentLayer={currentLayer}
             setCurrentLayer={setCurrentLayer}
-          /> */}
+          />
           <Navigation
             layers={layers}
             currentLayer={currentLayer}

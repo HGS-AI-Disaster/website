@@ -29,10 +29,10 @@ import { Input } from "@/components/ui/input"
 
 function Navigation({ layers, currentLayer, setCurrentLayer }) {
   const [currentDate, setCurrentDate] = useState("")
-  const uniqueDates = [...new Set(layers.map((layer) => layer.layerDate))]
+  const uniqueDates = [...new Set(layers.map((layer) => layer.layer_date))]
 
   useEffect(() => {
-    setCurrentDate(currentLayer.layerDate)
+    setCurrentDate(currentLayer.layer_date)
   }, [])
 
   return (
@@ -46,7 +46,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
             defaultValue="item-1"
           >
             {layers
-              .filter((layer) => layer.layerDate === currentDate)
+              .filter((layer) => layer.layer_date === currentDate)
               .some((layer) => layer.category === "Cloud Layer") && (
               <AccordionItem value="item-1">
                 <AccordionTrigger className="px-2">
@@ -57,7 +57,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
                     .filter(
                       (layer) =>
                         layer.category === "Cloud Layer" &&
-                        layer.layerDate === currentDate
+                        layer.layer_date === currentDate
                     )
                     .map((layer, index) => (
                       <a
@@ -78,7 +78,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
               </AccordionItem>
             )}
             {layers
-              .filter((layer) => layer.layerDate === currentDate)
+              .filter((layer) => layer.layer_date === currentDate)
               .some((layer) => layer.category === "Disaster Layer") && (
               <AccordionItem value="item-2">
                 <AccordionTrigger className="px-2">
@@ -89,7 +89,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
                     .filter(
                       (layer) =>
                         layer.category === "Disaster Layer" &&
-                        layer.layerDate === currentDate
+                        layer.layer_date === currentDate
                     )
                     .map((layer, index) => (
                       <a
@@ -110,7 +110,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
               </AccordionItem>
             )}
             {layers
-              .filter((layer) => layer.layerDate === currentDate)
+              .filter((layer) => layer.layer_date === currentDate)
               .some((layer) => layer.category === "Chiba University") && (
               <AccordionItem value="item-3">
                 <AccordionTrigger className="px-2">
@@ -121,7 +121,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
                     .filter(
                       (layer) =>
                         layer.category === "Chiba University" &&
-                        layer.layerDate === currentDate
+                        layer.layer_date === currentDate
                     )
                     .map((layer, index) => (
                       <a
@@ -180,13 +180,13 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
             <div className={"flex gap-2"}>
               {uniqueDates.map((date) => {
                 const sampleLayer = layers.find(
-                  (layer) => layer.layerDate === date
+                  (layer) => layer.layer_date === date
                 )
                 return (
                   <DropdownMenu key={date}>
                     <DropdownMenuTrigger
                       onClick={() => {
-                        setCurrentDate(sampleLayer.layerDate)
+                        setCurrentDate(sampleLayer.layer_date)
                         setCurrentLayer(sampleLayer)
                       }}
                       className={`cursor-pointer relative`}
@@ -209,7 +209,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
                     {/* <NavigationMenuItem key={date}>
                         <NavigationMenuLink
                           onClick={() => {
-                            setCurrentDate(sampleLayer.layerDate)
+                            setCurrentDate(sampleLayer.layer_date)
                             setCurrentLayer(sampleLayer)
                           }}
                           className={`cursor-pointer px-4 bg-gray-50 hover:bg-gray-50 relative`}

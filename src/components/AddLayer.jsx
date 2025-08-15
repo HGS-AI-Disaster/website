@@ -39,7 +39,7 @@ export default function AddLayer({ setEdited }) {
     const formdata = new FormData()
     formdata.append("layer", data.layer)
     formdata.append("category", data.category)
-    formdata.append("layerDate", data.date)
+    formdata.append("layer_date", data.date)
     formdata.append("source", data.source)
     formdata.append("visibility", data.visibility)
     formdata.append("description", data.description || "")
@@ -196,9 +196,9 @@ export default function AddLayer({ setEdited }) {
 
           {/* Layer Date */}
           <div className="grid w-full items-center gap-2">
-            <Label htmlFor="layerDate">Layer date</Label>
+            <Label htmlFor="layer_date">Layer date</Label>
             <Input
-              id="layerDate"
+              id="layer_date"
               type="date"
               {...register("date", { required: true })}
             />
