@@ -151,7 +151,7 @@ function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
             }}
           />
         )}
-        <div className="absolute bottom-24 right-8 z-[999] flex flex-col gap-2 justify-end items-end">
+        <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
           <Button
             // onClick={zoomIn}
             onClick={handleZoomIn}

@@ -28,7 +28,7 @@ function Map() {
   }, [])
 
   return (
-    <div className="h-full">
+    <div className="flex-1">
       {loading ? (
         <p>Loading...</p>
       ) : (

@@ -36,7 +36,7 @@ function Navigation({ layers, currentLayer, setCurrentLayer }) {
   }, [])
 
   return (
-    <div className="navigations flex-1 flex flex-col h-full">
+    <div className="navigations h-full flex flex-col">
       <div className="top w-full flex flex-1 justify-between">
         <div className="layers relative flex-1 m-8 z-20">
           <Accordion

@@ -46,6 +46,7 @@ import { supabase } from "../lib/supabaseClient"
 import { toast } from "sonner"
 import EditVisibility from "./EditVisibility"
 import DeleteLayer from "./DeleteLayer"
+import { useSelector } from "react-redux"
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
