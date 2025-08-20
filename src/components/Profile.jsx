@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,17 +41,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./ui/select"
-import { useSelector } from "react-redux"
+import { useDispatch, useSelector } from "react-redux"
 import { toast } from "sonner"
+import { updateProfile } from "../../redux/actions/auth"
 
 function Profile() {
   const [openProfile, setOpenProfile] = useState(false)
   const data = useSelector((state) => state.auth)
+  const dispatch = useDispatch()
 
   const formSchema = z
     .object({
       username: z.string().min(4, "Username must be at least 4 characters"),
       email: z.email("Email is not valid"),
+      role: z.string().min(1, "Role is required"),
       password: z.string().optional(),
       confirmPassword: z.string().optional(),
     })
@@ -101,38 +104,21 @@ function Profile() {
   }
 
   function onSubmit(values) {
-    if (values.password || values.confirmPassword) {
-      const myHeaders = new Headers()
-      myHeaders.append("Content-Type", "application/json")
-
-      const raw = JSON.stringify({
-        password: values.password,
-        confirmPassword: values.confirmPassword,
-      })
-
-      const requestOptions = {
-        method: "PUT",
-        headers: myHeaders,
-        body: raw,
-        redirect: "follow",
-      }
-
-      fetch(
-        `http://localhost:3000/api/auth/change-password/${data.user.id}`,
-        requestOptions
-      )
-        .then((response) => response.text())
-        .then((result) => {
-          console.log(result)
-          toast.success("Password updated")
-        })
-        .catch((error) => toast.error(error?.response?.data?.message))
-        .finally()
-    }
-
-    resetForm()
+    dispatch(updateProfile(values))
     setOpenProfile(false)
   }
+
+  useEffect(() => {
+    if (data?.profile && data?.user) {
+      form.reset({
+        username: data.profile.username,
+        email: data.user.email,
+        role: data.profile.role,
+        password: "",
+        confirmPassword: "",
+      })
+    }
+  }, [data.profile, data.user, form])
 
   return (
     <>
@@ -248,8 +234,10 @@ function Profile() {
                   <FormItem className={"w-full"}>
                     <FormLabel className={"mt-2"}>Role</FormLabel>
                     <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value) // update value
+                      }}
+                      value={field.value} // bind current value
                     >
                       <FormControl className={"w-full"}>
                         <SelectTrigger>

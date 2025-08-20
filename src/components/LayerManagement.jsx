@@ -22,7 +22,6 @@ import {
   MenubarSubContent,
 } from "@/components/ui/menubar"
 import { Button } from "./ui/button"
-import { Label } from "@/components/ui/label"
 import {
   flexRender,
   getCoreRowModel,
@@ -31,7 +30,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react"
+import { ArrowUpDown } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -42,11 +41,8 @@ import {
 } from "@/components/ui/table"
 import AddLayer from "./AddLayer"
 import EditLayer from "./EditLayer"
-import { supabase } from "../lib/supabaseClient"
-import { toast } from "sonner"
 import EditVisibility from "./EditVisibility"
 import DeleteLayer from "./DeleteLayer"
-import { useSelector } from "react-redux"
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {

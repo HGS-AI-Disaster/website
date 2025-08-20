@@ -107,7 +107,7 @@ function Login() {
                 className="grid gap-3"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>password</FormLabel>
+                    <FormLabel>Password</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -119,7 +119,7 @@ function Login() {
                 )}
               />
             </div>
-            <DialogFooter>
+            <DialogFooter className="mt-4">
               <DialogClose asChild>
                 <Button variant="outline">Cancel</Button>
               </DialogClose>
