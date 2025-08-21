@@ -9,54 +9,89 @@ import { toast } from "sonner"
 
 function Home() {
   const auth = useSelector((state) => state.auth)
-
   const dispatch = useDispatch()
 
   useEffect(() => {
-    // ambil session saat pertama kali load
-    const getInitialSession = async () => {
+    // 1. Cek session pertama kali
+    const getSession = async () => {
       const { data } = await supabase.auth.getSession()
-      if (data.session) {
-        dispatch(setToken(data.session.access_token))
-        dispatch(setUser(data.session.user))
-      }
-    }
-    getInitialSession()
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!session) {
-          // user signed out atau token invalid
-          dispatch(setToken(null))
-          dispatch(setUser(null))
-          dispatch(setProfile(null))
-          return
-        }
-
-        const { data, error } = await supabase
+      if (data.session?.user) {
+        const { data: profileData, error } = await supabase
           .from("profiles")
           .select("*")
-          .eq("id", session.user.id)
+          .eq("id", data.session?.user.id)
           .single()
-
-        if (session.access_token) {
-          dispatch(setToken(session.access_token))
-          dispatch(setUser(session.user))
-          dispatch(setProfile(data))
-          return
-        }
-
-        if (error) {
-          console.error("Error fetching profile:", error)
-          return
-        }
+        if (error) throw error
+        console.log(profileData)
+        dispatch(setProfile(profileData))
       }
-    )
 
-    return () => {
-      subscription.subscription.unsubscribe()
+      dispatch(setUser(data.session?.user || null))
     }
-  }, [dispatch])
+
+    getSession()
+
+    // 2. Listen kalau ada perubahan login/logout
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      dispatch(setUser(session?.user || null))
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // useEffect(() => {
+  //   // ambil session saat pertama kali load
+  //   const getInitialSession = async () => {
+  //     const { data } = await supabase.auth.getSession()
+  //     if (data.session) {
+  //       dispatch(setToken(data.session.access_token))
+  //       dispatch(setUser(data.session.user))
+  //     }
+  //     console.log(data)
+  //   }
+  //   getInitialSession()
+  //   console.log("test")
+
+  //   const { data: subscription } = supabase.auth.onAuthStateChange(
+  //     async (_event, session) => {
+  //       console.log("auth event:", _event)
+  //       if (!session) {
+  //         // user signed out atau token invalid
+  //         dispatch(setToken(null))
+  //         dispatch(setUser(null))
+  //         dispatch(setProfile(null))
+  //         return
+  //       }
+
+  //       console.log("auth token berubah")
+
+  //       const { data, error } = await supabase
+  //         .from("profiles")
+  //         .select("*")
+  //         .eq("id", session.user.id)
+  //         .single()
+
+  //       if (session.access_token) {
+  //         dispatch(setToken(session.access_token))
+  //         dispatch(setUser(session.user))
+  //         dispatch(setProfile(data))
+  //         return
+  //       }
+
+  //       if (error) {
+  //         console.error("Error fetching profile:", error)
+  //         return
+  //       }
+  //     }
+  //   )
+
+  //   return () => {
+  //     subscription.subscription.unsubscribe()
+  //   }
+  // }, [dispatch])
 
   useEffect(() => {
     const authData = sessionStorage.getItem("auth")

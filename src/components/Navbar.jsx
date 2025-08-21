@@ -46,14 +46,14 @@ import Login from "./Login"
 import { useDispatch, useSelector } from "react-redux"
 
 function Navbar() {
-  const auth = useSelector((state) => state.auth)
+  const { user } = useSelector((state) => state.auth)
 
   return (
     <div className="navbar w-full py-4 px-8 flex justify-between z-[20] bg-gray-50 shadow-md">
       <div className="text text-2xl font-semibold">
         AI Disaster Mitigation Platform
       </div>
-      {auth.token ? <Profile /> : <Login />}
+      {user ? <Profile /> : <Login />}
     </div>
   )
 }

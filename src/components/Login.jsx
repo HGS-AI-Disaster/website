@@ -42,7 +42,7 @@ import {
   SelectValue,
 } from "./ui/select"
 import { useDispatch } from "react-redux"
-import { login } from "../../redux/actions/auth"
+import { login } from "@/supabase/actions/auth"
 
 function Login() {
   const dispatch = useDispatch()

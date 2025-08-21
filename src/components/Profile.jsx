@@ -43,10 +43,12 @@ import {
 } from "./ui/select"
 import { useDispatch, useSelector } from "react-redux"
 import { toast } from "sonner"
-import { updateProfile } from "../../redux/actions/auth"
+import { logout } from "../../redux/actions/auth"
+import { updateProfile } from "@/supabase/actions/auth"
 
 function Profile() {
   const [openProfile, setOpenProfile] = useState(false)
+  const [openLogout, setOpenLogout] = useState(false)
   const data = useSelector((state) => state.auth)
   const dispatch = useDispatch()
 
@@ -85,9 +87,9 @@ function Profile() {
   const form = useForm({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: data.profile.username,
-      email: data.user.email,
-      role: data.profile.role,
+      username: data.profile?.username || "",
+      email: data.user?.email || "",
+      role: data.profile?.role || "",
       password: "",
       confirmPassword: "",
     },
@@ -95,25 +97,43 @@ function Profile() {
 
   const resetForm = () => {
     form.reset({
-      username: data.profile.username,
-      email: data.user.email,
-      role: data.profile.role,
+      username: data.profile?.username || "",
+      email: data.user?.email || "",
+      role: data.profile?.role || "",
       password: "",
       confirmPassword: "",
     })
   }
 
+  const changePassword = async (newPassword) => {
+    try {
+      const { data, error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+
+      if (error) throw error
+
+      toast.success("Password updated successfully")
+      return data
+    } catch (err) {
+      console.error("Update password error:", err)
+      toast.error(err.message || "Failed to update password")
+    }
+  }
+
   function onSubmit(values) {
-    dispatch(updateProfile(values))
+    // if (values.password || values.resetPass)
+    updateProfile(values)
     setOpenProfile(false)
   }
 
   useEffect(() => {
+    console.log(data)
     if (data?.profile && data?.user) {
       form.reset({
-        username: data.profile.username,
-        email: data.user.email,
-        role: data.profile.role,
+        username: data.profile?.username,
+        email: data.user?.email,
+        role: data.profile?.role,
         password: "",
         confirmPassword: "",
       })
@@ -140,14 +160,41 @@ function Profile() {
           </svg>
         </DropdownMenuTrigger>
         <DropdownMenuContent>
-          <DropdownMenuLabel>{data.profile.username}</DropdownMenuLabel>
+          <DropdownMenuLabel>{data.profile?.username || ""}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={() => setOpenProfile(true)}>
             Profile
           </DropdownMenuItem>
-          <DropdownMenuItem>Logout</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => setOpenLogout(true)}>
+            Logout
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      <Dialog
+        open={openLogout}
+        onOpenChange={(open) => setOpenLogout(open)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Logout</DialogTitle>
+            <DialogDescription>Are you sure to logout?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              type="submit"
+              onClick={() => {
+                dispatch(logout())
+                setOpenLogout(false)
+              }}
+            >
+              Yes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog
         open={openProfile}
         onOpenChange={(open) => {
@@ -167,17 +214,17 @@ function Profile() {
             </div>
             <div className="">
               <DialogTitle className="flex gap-1">
-                <div className="">{data.profile.username}</div>
+                <div className="">{data.profile?.username || ""}</div>
                 <Badge
                   variant={"outline"}
                   className={"text-[12px] text-green-400 border-green-200"}
                 >
-                  {data.profile.role}
+                  {data.profile?.role}
                 </Badge>
               </DialogTitle>
               <DialogDescription>
                 <span className="email text-gray-500 my-1 block">
-                  {data.user.email}
+                  {data.user?.email}
                 </span>
                 <Button
                   variant="outline"

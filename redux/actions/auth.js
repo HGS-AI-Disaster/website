@@ -1,40 +1,58 @@
 import axios from "axios"
 import { toast } from "sonner"
 import { setToken, setUser, setProfile } from "../reducers/auth"
+import { supabase } from "@/supabase"
 
-export const login = (email, password) => async (dispatch) => {
-  let data = JSON.stringify({
-    email,
-    password,
-  })
+// export const login = (email, password) => async (dispatch) => {
+//   try {
+//     const { data, error } = await supabase.auth.signInWithPassword({
+//       email,
+//       password,
+//     })
 
-  let config = {
-    method: "post",
-    url: `${import.meta.env.VITE_BACKEND_API}/auth/login`,
-    headers: {
-      "Content-Type": "application/json",
-    },
-    data: data,
-  }
+//     if (error) throw error
 
-  try {
-    const response = await axios.request(config)
+//     const { user, session } = data
 
-    // get and save the token to local storage
-    const { data, profile } = response.data
-    const { user, session } = data
+//     // ambil profile user (kalau kamu pakai table profiles)
+//     const { data: profile, error: profileError } = await supabase
+//       .from("profiles")
+//       .select("*")
+//       .eq("id", user.id)
+//       .single()
 
-    // Change the token value in the reducer
-    dispatch(setToken(session.access_token))
-    dispatch(setUser(user))
-    dispatch(setProfile(profile))
+//     if (profileError) throw profileError
 
-    toast.success("Login success")
-  } catch (error) {
-    console.error(error)
-    toast.error(error?.response?.data?.message)
-  }
-}
+//     // update Redux state (ga perlu setItem localStorage lagi)
+//     dispatch(setUser(user))
+//     dispatch(setProfile(profile))
+
+//     toast.success("Login success")
+//   } catch (err) {
+//     console.error("Login error:", err)
+//     toast.error(err.message || "Login failed")
+//   }
+// }
+
+// export const login = (email, password) => {
+
+// }
+
+// export const changePassword = (newPassword) => async (dispatch) => {
+//   try {
+//     const { data, error } = await supabase.auth.updateUser({
+//       password: newPassword,
+//     })
+
+//     if (error) throw error
+
+//     toast.success("Password updated successfully")
+//     return data
+//   } catch (err) {
+//     console.error("Update password error:", err)
+//     toast.error(err.message || "Failed to update password")
+//   }
+// }
 
 export const updateProfile = (values) => async (dispatch, getState) => {
   const state = getState()
@@ -70,10 +88,8 @@ export const updateProfile = (values) => async (dispatch, getState) => {
       )
       const result = await response.json()
 
-      console.log(result)
-
       // Update Redux kalau berhasil
-      dispatch(setProfile(result.data.profile[0]))
+      dispatch(setProfile(result.data.profile))
       dispatch(setUser(result.data.email))
 
       toast.success("Profile updated")
@@ -111,4 +127,27 @@ export const updateProfile = (values) => async (dispatch, getState) => {
       .catch((error) => toast.error(error?.response?.data?.message))
       .finally()
   }
+}
+
+export const logout = () => async (dispatch) => {
+  const raw = ""
+
+  const requestOptions = {
+    method: "POST",
+    body: raw,
+    redirect: "follow",
+  }
+
+  fetch("http://localhost:3000/api/auth/logout", requestOptions)
+    .then((response) => response.text())
+    .then((result) => {
+      dispatch(setToken(null))
+      dispatch(setUser(null))
+      dispatch(setProfile(null))
+      toast.success("Logout success")
+    })
+    .catch((error) => {
+      console.error(error)
+      toast.error("Logout failed")
+    })
 }
