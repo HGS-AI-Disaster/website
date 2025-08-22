@@ -25,6 +25,7 @@ import { Pencil } from "lucide-react"
 import { useState } from "react"
 import { useEffect } from "react"
 import { toast } from "sonner"
+import { editLayer } from "@/supabase/actions/layer"
 
 export default function EditLayer({ layer, setEdited }) {
   const {
@@ -40,50 +41,23 @@ export default function EditLayer({ layer, setEdited }) {
   const [fileName, setFileName] = useState("")
 
   const onSubmit = (data) => {
-    console.log(data)
-
-    const formdata = new FormData()
-    formdata.append("layer", data.name)
-    formdata.append("category", data.category || layer.original.category)
-    formdata.append("layer_date", data.date)
-    formdata.append("source", data.source)
-    formdata.append("visibility", data.visibility || layer.original.visibility)
-    formdata.append("description", data.description)
-    data.file && formdata.append("file", data.file)
-
-    const requestOptions = {
-      method: "PUT",
-      body: formdata,
-      redirect: "follow",
-    }
-
-    toast.promise(
-      fetch(
-        `http://localhost:3000/api/layer/${layer.original.id}`,
-        requestOptions
-      ).then((response) => {
-        if (!response.ok) {
-          throw new Error("Failed to update layer")
-        }
-        return response.text()
+    toast.promise(editLayer({ id: layer.id, data }), {
+      loading: "Updating layer...",
+      success: () => ({
+        description: "Refresh the page to view the changes",
+        action: {
+          label: "Refresh",
+          onClick: () => window.location.reload(),
+        },
+        message: "Layer has been updated",
+        duration: 15000,
       }),
-      {
-        loading: "Updating layer...",
-        success: () => ({
-          description: "Refresh the page to view the changes",
-          action: {
-            label: "Refresh",
-            onClick: () => window.location.reload(),
-          },
-          message: "Layer has been updated",
-          duration: 15000,
-        }),
-        error: (err) => ({
-          message: "Error",
-          description: err.message || "Failed to update layer",
-        }),
-      }
-    )
+      error: (err) => ({
+        message: "Error",
+        description: err.message || "Failed to update layer",
+        duration: 15000,
+      }),
+    })
 
     reset()
     // setEdited((value) => !value)
@@ -138,10 +112,10 @@ export default function EditLayer({ layer, setEdited }) {
                       fileName
                     ) : (
                       <a
-                        href={layer.original.file_url}
+                        href={layer.file_url}
                         className="text-blue-500 underline"
                       >
-                        {layer.original.file_url.split("/").pop()}
+                        {layer.file_url.split("/").pop()}
                       </a>
                     )}
                   </p>
@@ -160,7 +134,7 @@ export default function EditLayer({ layer, setEdited }) {
             <Input
               id="layer"
               //   placeholder="Layer Name"
-              defaultValue={layer.original.layer}
+              defaultValue={layer.layer}
               {...register("name", { required: true })}
             />
             {errors.name && (
@@ -171,23 +145,31 @@ export default function EditLayer({ layer, setEdited }) {
           {/* Layer Category */}
           <div className="grid w-full items-center gap-2">
             <Label htmlFor="category">Category</Label>
-            <Select
-              id="category"
-              className="w-full"
-              onValueChange={(val) => setValue("category", val)}
-              defaultValue={layer.original.category}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Cloud Layer">Cloud Layer</SelectItem>
-                <SelectItem value="Disaster Layer">Disaster Layer</SelectItem>
-                <SelectItem value="Chiba University">
-                  Chiba University
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="category"
+              control={control}
+              defaultValue={layer.category}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cloud Layer">Cloud Layer</SelectItem>
+                    <SelectItem value="Disaster Layer">
+                      Disaster Layer
+                    </SelectItem>
+                    <SelectItem value="Chiba University">
+                      Chiba University
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.category && (
               <p className="text-red-500 text-xs">Category is required</p>
             )}
@@ -199,7 +181,7 @@ export default function EditLayer({ layer, setEdited }) {
             <Input
               id="layer_date"
               type="date"
-              defaultValue={layer.original.layer_date}
+              defaultValue={layer.layer_date}
               {...register("date", {
                 required: true,
               })}
@@ -215,27 +197,33 @@ export default function EditLayer({ layer, setEdited }) {
             <Input
               id="source"
               {...register("source")}
-              defaultValue={layer.original.source}
+              defaultValue={layer.source}
             />
           </div>
 
           {/* Visibility */}
           <div className="grid w-full items-center gap-2">
             <Label htmlFor="visibility">Visibility</Label>
-            <Select
-              id="visibility"
-              className="w-full"
-              defaultValue={layer.original.visibility}
-              onValueChange={(val) => setValue("visibility", val)}
-            >
-              <SelectTrigger className={"w-full"}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="public">Public</SelectItem>
-                <SelectItem value="private">Private</SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="visibility"
+              control={control}
+              defaultValue={layer.visibility}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.visibility && (
               <p className="text-red-500 text-xs">Visibility is required</p>
             )}
@@ -246,7 +234,7 @@ export default function EditLayer({ layer, setEdited }) {
             <Label htmlFor="desc">Description</Label>
             <Textarea
               id="desc"
-              defaultValue={layer.original.description || ""}
+              defaultValue={layer.description || ""}
               {...register("description")}
             />
           </div>
@@ -255,7 +243,6 @@ export default function EditLayer({ layer, setEdited }) {
             <Button variant="outline">Cancel</Button>
             <Button
               type="submit"
-              onClick={() => onSubmit()}
               className=" bg-blue-900 hover:bg-blue-950 text-white"
             >
               Update Layer

@@ -43,8 +43,7 @@ import {
 } from "./ui/select"
 import { useDispatch, useSelector } from "react-redux"
 import { toast } from "sonner"
-import { logout } from "../../redux/actions/auth"
-import { updateProfile } from "@/supabase/actions/auth"
+import { updateProfile, logout } from "@/supabase/actions/auth"
 
 function Profile() {
   const [openProfile, setOpenProfile] = useState(false)
@@ -105,30 +104,12 @@ function Profile() {
     })
   }
 
-  const changePassword = async (newPassword) => {
-    try {
-      const { data, error } = await supabase.auth.updateUser({
-        password: newPassword,
-      })
-
-      if (error) throw error
-
-      toast.success("Password updated successfully")
-      return data
-    } catch (err) {
-      console.error("Update password error:", err)
-      toast.error(err.message || "Failed to update password")
-    }
-  }
-
   function onSubmit(values) {
-    // if (values.password || values.resetPass)
-    updateProfile(values)
+    dispatch(updateProfile(values))
     setOpenProfile(false)
   }
 
   useEffect(() => {
-    console.log(data)
     if (data?.profile && data?.user) {
       form.reset({
         username: data.profile?.username,

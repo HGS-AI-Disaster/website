@@ -21,8 +21,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { useForm, Controller } from "react-hook-form"
 import { useState } from "react"
 import { toast } from "sonner"
+import { supabase } from "@/supabase"
+import { addLayer } from "@/supabase/actions/layer"
 
-export default function AddLayer({ setEdited }) {
+export default function AddLayer() {
   const {
     control,
     register,
@@ -35,50 +37,23 @@ export default function AddLayer({ setEdited }) {
   const [open, setOpen] = useState(false) // kontrol buka tutup dialog
   const [fileName, setFileName] = useState("")
 
-  const onSubmit = (data) => {
-    const formdata = new FormData()
-    formdata.append("layer", data.layer)
-    formdata.append("category", data.category)
-    formdata.append("layer_date", data.date)
-    formdata.append("source", data.source)
-    formdata.append("visibility", data.visibility)
-    formdata.append("description", data.description || "")
-    formdata.append("file", data.file)
-
-    // console.log(typeof data.date)
-
-    const requestOptions = {
-      method: "POST",
-      body: formdata,
-      redirect: "follow",
-    }
-
-    toast.promise(
-      fetch("http://localhost:3000/api/layer", requestOptions).then(
-        (response) => {
-          if (!response.ok) {
-            throw new Error("Failed to create layer")
-          }
-          return response.text()
-        }
-      ),
-      {
-        loading: "Creating layer...",
-        success: () => ({
-          description: "Refresh the page to view the changes",
-          action: {
-            label: "Refresh",
-            onClick: () => window.location.reload(),
-          },
-          message: "Layer has been created",
-          duration: 15000,
-        }),
-        error: (err) => ({
-          message: "Error",
-          description: err.message || "Failed to create layer",
-        }),
-      }
-    )
+  const onSubmit = async (data) => {
+    toast.promise(addLayer(data), {
+      loading: "Uploading layer...",
+      success: () => ({
+        description: "Refresh the page to view the changes",
+        action: {
+          label: "Refresh",
+          onClick: () => window.location.reload(),
+        },
+        message: "Layer has been created",
+        duration: 15000,
+      }),
+      error: (err) => ({
+        message: "Error",
+        description: err.message || "Failed to create layer",
+      }),
+    })
 
     reset()
     setOpen(false)

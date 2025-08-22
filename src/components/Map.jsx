@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
 import GoogleMaps from "./GoogleMaps"
 import Navigation from "./Navigation"
+import { getLayers } from "@/supabase/actions/layer"
 
 function Map() {
   const [layers, setLayers] = useState([])
@@ -9,22 +10,20 @@ function Map() {
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    const getLayers = async () => {
+    const fetchLayers = async () => {
       setLoading(true)
       try {
-        const res = await fetch("http://localhost:3000/api/layer")
-        const json = await res.json()
-        if (!res.ok) throw new Error(json.message || "Gagal fetch layer")
-        setLayers(json.data)
-        setCurrentLayer(json.data[0])
+        const data = await getLayers()
+        setLayers(data)
+        setCurrentLayer(data[0])
       } catch (err) {
-        setError(err.message)
+        setError(err)
       } finally {
         setLoading(false)
       }
     }
 
-    getLayers()
+    fetchLayers()
   }, [])
 
   return (

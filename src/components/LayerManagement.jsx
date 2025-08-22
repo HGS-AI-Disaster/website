@@ -43,6 +43,8 @@ import AddLayer from "./AddLayer"
 import EditLayer from "./EditLayer"
 import EditVisibility from "./EditVisibility"
 import DeleteLayer from "./DeleteLayer"
+import { getLayers } from "@/supabase/actions/layer"
+import { toast } from "sonner"
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
@@ -164,7 +166,7 @@ export const columns = [
     cell: ({ row }) => {
       return (
         <div className="action flex gap-2">
-          <EditLayer layer={row} />
+          <EditLayer layer={row.original} />
           <EditVisibility layer={row} />
           <DeleteLayer layer={row} />
         </div>
@@ -206,19 +208,14 @@ function LayerManagement() {
   }
 
   const fetchData = async () => {
-    const requestOptions = {
-      method: "GET",
-      redirect: "follow",
+    try {
+      const data = await getLayers()
+      setData(data)
+      setRawData(data)
+    } catch (error) {
+      toast.error(error)
     }
-
-    fetch("http://localhost:3000/api/layer", requestOptions)
-      .then((response) => response.json())
-      .then((result) => {
-        setData(result.data)
-        setRawData(result.data)
-      })
-      .catch((error) => console.error(error))
-      .finally(() => setLoading(false))
+    setLoading(false)
   }
 
   useEffect(() => {

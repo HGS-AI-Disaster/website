@@ -52,7 +52,10 @@ export const updateProfile = (values) => async (dispatch, getState) => {
         )
 
       if (emailError) throw emailError
-
+      toast.success(
+        "Email verification sent. Please check your old and new email inbox to verify.",
+        { duration: 10000 }
+      )
       dispatch(setUser(emailData.user))
     }
 
@@ -68,33 +71,34 @@ export const updateProfile = (values) => async (dispatch, getState) => {
       if (profileError) throw profileError
 
       dispatch(setProfile(profile))
+      toast.success("Profile updated successfully", { duration: 10000 })
     }
 
     // Update password kalau valid
     if (password && confirmPassword && password === confirmPassword) {
       const { error: pwError } = await supabase.auth.updateUser({ password })
       if (pwError) throw pwError
-    }
 
-    toast.success("Profile updated successfully")
+      toast.success("Password changed", { duration: 10000 })
+    }
   } catch (error) {
     console.error("Update profile error:", error)
     toast.error(error.message || "Failed to update profile")
   }
 }
 
-export const changePassword = async (newPassword) => {
+export const logout = () => async (dispatch) => {
   try {
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword,
-    })
+    const { error } = await supabase.auth.signOut()
 
     if (error) throw error
 
-    toast.success("Password updated successfully")
-    return data
-  } catch (err) {
-    console.error("Update password error:", err)
-    toast.error(err.message || "Failed to update password")
+    dispatch(setUser(null))
+    dispatch(setProfile(null))
+
+    toast.success("You have been logged out")
+  } catch (error) {
+    console.error("Logout error:", err)
+    toast.error(err.message || "Logout failed")
   }
 }

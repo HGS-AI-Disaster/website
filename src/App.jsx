@@ -18,6 +18,7 @@ function App({ children }) {
       <Toaster
         richColors
         position="top-center"
+        expand={true}
       />
       <RouterProvider router={router}>{children}</RouterProvider>
     </Provider>

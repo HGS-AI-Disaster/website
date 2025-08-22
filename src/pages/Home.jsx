@@ -42,57 +42,6 @@ function Home() {
     return () => subscription.unsubscribe()
   }, [])
 
-  // useEffect(() => {
-  //   // ambil session saat pertama kali load
-  //   const getInitialSession = async () => {
-  //     const { data } = await supabase.auth.getSession()
-  //     if (data.session) {
-  //       dispatch(setToken(data.session.access_token))
-  //       dispatch(setUser(data.session.user))
-  //     }
-  //     console.log(data)
-  //   }
-  //   getInitialSession()
-  //   console.log("test")
-
-  //   const { data: subscription } = supabase.auth.onAuthStateChange(
-  //     async (_event, session) => {
-  //       console.log("auth event:", _event)
-  //       if (!session) {
-  //         // user signed out atau token invalid
-  //         dispatch(setToken(null))
-  //         dispatch(setUser(null))
-  //         dispatch(setProfile(null))
-  //         return
-  //       }
-
-  //       console.log("auth token berubah")
-
-  //       const { data, error } = await supabase
-  //         .from("profiles")
-  //         .select("*")
-  //         .eq("id", session.user.id)
-  //         .single()
-
-  //       if (session.access_token) {
-  //         dispatch(setToken(session.access_token))
-  //         dispatch(setUser(session.user))
-  //         dispatch(setProfile(data))
-  //         return
-  //       }
-
-  //       if (error) {
-  //         console.error("Error fetching profile:", error)
-  //         return
-  //       }
-  //     }
-  //   )
-
-  //   return () => {
-  //     subscription.subscription.unsubscribe()
-  //   }
-  // }, [dispatch])
-
   useEffect(() => {
     const authData = sessionStorage.getItem("auth")
 
@@ -115,7 +64,7 @@ function Home() {
         <Navbar />
         <Map />
       </div>
-      {auth.token && <LayerManagement />}
+      {auth.user && <LayerManagement />}
     </div>
   )
 }
