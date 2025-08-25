@@ -40,13 +40,19 @@ export default function AddLayer() {
   const onSubmit = async (data) => {
     toast.promise(addLayer(data), {
       loading: "Uploading layer...",
-      success: () => ({
+      success: (res) => ({
         description: "Refresh the page to view the changes",
         action: {
           label: "Refresh",
           onClick: () => window.location.reload(),
         },
-        message: "Layer has been created",
+        message: `Layer for ${new Date(res.layer_date).toLocaleDateString(
+          "en-GB",
+          {
+            day: "2-digit",
+            month: "long",
+          }
+        )} has been created`,
         duration: 15000,
       }),
       error: (err) => ({

@@ -12,9 +12,31 @@ import {
 import { Button } from "./ui/button"
 import { Eye, EyeClosed } from "lucide-react"
 import { toast } from "sonner"
+import { editVisibility } from "@/supabase/actions/layer"
 
 function EditVisibility({ layer }) {
   const [open, setOpen] = useState(false) // kontrol buka tutup dialog
+
+  const onSubmit = async (id) => {
+    toast.promise(editVisibility(id), {
+      loading: "Updating layer...",
+      success: () => ({
+        description: "Refresh the page to view the changes",
+        action: {
+          label: "Refresh",
+          onClick: () => window.location.reload(),
+        },
+        message: "Layer's visibility has been updated",
+        duration: 15000,
+      }),
+      error: (err) => ({
+        message: "Failed to update layer",
+        description: err.message || "Failed to update layer",
+      }),
+    })
+
+    setOpen(false)
+  }
 
   return (
     <Dialog
@@ -41,42 +63,7 @@ function EditVisibility({ layer }) {
           </DialogClose>
           <Button
             type="submit"
-            onClick={() => {
-              const requestOptions = {
-                method: "PUT",
-                redirect: "follow",
-              }
-
-              toast.promise(
-                fetch(
-                  `http://localhost:3000/api/layer/edit-visibility/${layer.original.id}`,
-                  requestOptions
-                ).then((response) => {
-                  if (!response.ok) {
-                    throw new Error("Failed to update layer")
-                  }
-                  return response.text()
-                }),
-                {
-                  loading: "Updating layer...",
-                  success: () => ({
-                    description: "Refresh the page to view the changes",
-                    action: {
-                      label: "Refresh",
-                      onClick: () => window.location.reload(),
-                    },
-                    message: "Layer's visibility has been updated",
-                    duration: 15000,
-                  }),
-                  error: (err) => ({
-                    message: "Error",
-                    description: err.message || "Failed to update layer",
-                  }),
-                }
-              )
-
-              setOpen(false)
-            }}
+            onClick={() => onSubmit(layer.original.id)}
           >
             Yes
           </Button>

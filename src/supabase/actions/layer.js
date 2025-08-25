@@ -36,19 +36,27 @@ export const addLayer = async (data) => {
     .getPublicUrl(filePath)
 
   // Insert ke tabel `layers`
-  const { error: addLayerError } = await supabase.from("layers").insert([
-    {
-      layer,
-      category,
-      layer_date: date,
-      source,
-      visibility,
-      description,
-      file_url: publicUrl, // ambil `publicUrl`
-    },
-  ])
+  const { data: addLayerData, error: addLayerError } = await supabase
+    .from("layers")
+    .insert([
+      {
+        layer,
+        category,
+        layer_date: date,
+        source,
+        visibility,
+        description,
+        file_url: publicUrl.publicUrl, // ambil `publicUrl`
+      },
+    ])
+    .select("*")
+    .single()
 
   if (addLayerError) throw addLayerError
+
+  console.log(addLayerData)
+
+  return addLayerData
 }
 
 export const editLayer = async ({ id, data }) => {
@@ -65,8 +73,6 @@ export const editLayer = async ({ id, data }) => {
         cacheControl: "3600",
         upsert: false,
       })
-
-    //   Cannot destructure property 'layer' of 'data' as it is undefined.
 
     if (uploadError) throw uploadError
 
@@ -86,8 +92,6 @@ export const editLayer = async ({ id, data }) => {
     }
   }
 
-  console.log(id)
-
   const { error } = await supabase
     .from("layers")
     .update({
@@ -104,4 +108,30 @@ export const editLayer = async ({ id, data }) => {
   if (error) {
     throw error
   }
+}
+
+export const editVisibility = async (id) => {
+  const { data: selectedLayer, error: selectedError } = await supabase
+    .from("layers")
+    .select("*")
+    .eq("id", id)
+    .single()
+
+  if (selectedError) throw selectedError
+
+  const { error } = await supabase
+    .from("layers")
+    .update({
+      visibility: selectedLayer.visibility === "public" ? "private" : "public",
+    })
+    .eq("id", id)
+    .select()
+
+  if (error) throw error
+}
+
+export const deleteLayer = async (id) => {
+  const { error } = await supabase.from("layers").delete().eq("id", id).select()
+
+  if (error) throw error
 }

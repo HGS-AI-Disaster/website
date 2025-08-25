@@ -89,7 +89,6 @@ export default function EditLayer({ layer, setEdited }) {
             >
               Update file GeoJSON
             </Label>
-
             <Controller
               name="file"
               control={control}

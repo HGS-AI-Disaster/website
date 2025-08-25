@@ -57,7 +57,7 @@ function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
       }
     })
 
-    const geojsonUrl = currentLayer.file_url
+    const geojsonUrl = currentLayer?.file_url
 
     fetch(geojsonUrl)
       .then((res) => res.json())
@@ -109,7 +109,7 @@ function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
   }
 
   useEffect(() => {
-    if (!mapRef.current || !currentLayer?.file_url) return
+    if (!mapRef.current || !currentLayer.file_url) return
 
     const map = mapRef.current
 
@@ -118,8 +118,12 @@ function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
       map.data.remove(feature)
     })
 
+    if (currentLayer.visibility === "private") {
+      return
+    }
+
     // Load new GeoJSON layer
-    fetch(currentLayer.file_url)
+    fetch(currentLayer?.file_url)
       .then((res) => res.json())
       .then((data) => {
         map.data.addGeoJson(data)
