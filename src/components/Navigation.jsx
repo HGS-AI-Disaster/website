@@ -27,11 +27,34 @@ import {
 } from "@/components/ui/accordion"
 import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { Badge } from "./ui/badge"
+import { Autocomplete } from "@react-google-maps/api"
 
-function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
-  const layers = allLayers.filter((layer) => layer.visibility === "public")
+function Navigation({
+  setSearchResult,
+  layers,
+  currentLayer,
+  setCurrentLayer,
+}) {
+  const [autocomplete, setAutocomplete] = useState(null)
   const [currentDate, setCurrentDate] = useState("")
   const uniqueDates = [...new Set(layers.map((layer) => layer.layer_date))]
+
+  const onLoad = (ac) => setAutocomplete(ac)
+
+  const onPlaceChanged = () => {
+    if (autocomplete) {
+      const place = autocomplete.getPlace()
+      if (place.geometry) {
+        const location = place.geometry.location
+        const pos = {
+          lat: location.lat(),
+          lng: location.lng(),
+        }
+        setSearchResult(pos) // kirim ke parent
+      }
+    }
+  }
 
   useEffect(() => {
     if (layers.length && !currentDate) {
@@ -58,7 +81,7 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
                   <AccordionTrigger className="px-2">
                     Cloud Layer
                   </AccordionTrigger>
-                  <AccordionContent className="flex flex-col text-balance">
+                  <AccordionContent className="flex flex-col text-balance max-h-50 overflow-y-auto">
                     {layers
                       .filter(
                         (layer) =>
@@ -75,8 +98,18 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
                           }}
                           className="cursor-default"
                         >
-                          <div className="text px-2 py-2 hover:bg-gray-100">
-                            {layer.layer}
+                          <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100">
+                            <div className="flex-1 truncate">{layer.layer}</div>
+                            {currentLayer.layer === layer.layer && (
+                              <Badge
+                                variant={"secondary"}
+                                className={
+                                  "text-[10.5px] bg-blue-500 text-white"
+                                }
+                              >
+                                active
+                              </Badge>
+                            )}
                           </div>
                         </a>
                       ))}
@@ -90,7 +123,7 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
                   <AccordionTrigger className="px-2">
                     Disaster Prediction
                   </AccordionTrigger>
-                  <AccordionContent className="flex flex-col text-balance">
+                  <AccordionContent className="flex flex-col text-balance max-h-50 overflow-y-auto">
                     {layers
                       .filter(
                         (layer) =>
@@ -107,8 +140,18 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
                           }}
                           className="cursor-default"
                         >
-                          <div className="text px-2 py-2 hover:bg-gray-100">
-                            {layer.layer}
+                          <div className="text px-2 py-2 hover:bg-gray-100 flex gap-3 items-center">
+                            <div className="flex-1 truncate">{layer.layer}</div>
+                            {currentLayer.layer === layer.layer && (
+                              <Badge
+                                variant={"secondary"}
+                                className={
+                                  "text-[10.5px] bg-blue-500 text-white"
+                                }
+                              >
+                                active
+                              </Badge>
+                            )}
                           </div>
                         </a>
                       ))}
@@ -122,7 +165,7 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
                   <AccordionTrigger className="px-2">
                     Chiba University
                   </AccordionTrigger>
-                  <AccordionContent className="flex flex-col text-balance">
+                  <AccordionContent className="flex flex-col text-balance max-h-50 overflow-y-auto">
                     {layers
                       .filter(
                         (layer) =>
@@ -139,8 +182,18 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
                           }}
                           className="cursor-default"
                         >
-                          <div className="text px-2 py-2 hover:bg-gray-100">
-                            {layer.layer}
+                          <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100">
+                            <div className="flex-1 truncate">{layer.layer}</div>
+                            {currentLayer.layer === layer.layer && (
+                              <Badge
+                                variant={"secondary"}
+                                className={
+                                  "text-[10.5px] bg-blue-500 text-white"
+                                }
+                              >
+                                active
+                              </Badge>
+                            )}
                           </div>
                         </a>
                       ))}
@@ -153,11 +206,27 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
           <div className="flex-1 m-8 -z-20"></div>
         )}
         <div className="search-bar flex-5 flex justify-center m-8">
-          <Input
+          {/* <Input
             type="text"
             className={"rounded-full w-2/5 z-20 bg-gray-50 px-6 py-5"}
             placeholder="Search places..."
-          />
+          /> */}
+          <Autocomplete
+            onLoad={onLoad}
+            onPlaceChanged={onPlaceChanged}
+          >
+            <input
+              type="text"
+              onBlur={(input) => {
+                if (!input.target.value) {
+                  setSearchResult(null)
+                }
+                input.target.value
+              }}
+              placeholder="Search places..."
+              className="-translate-x-1 text-sm w-80 border rounded-full z-20 bg-gray-50 px-6 py-3"
+            />
+          </Autocomplete>
         </div>
         <div className="legend flex-1 m-8 text-sm flex justify-end">
           <div className="bg-white shadow-md rounded-lg w-fit h-fit z-20">
@@ -187,21 +256,47 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
         <div className="time-series flex mb-8 flex-col items-center z-20">
           {uniqueDates.length ? (
             <div className={"bg-gray-50 h-fit px-4 pt-[6px] rounded-lg"}>
-              <div className={"flex gap-2"}>
-                {uniqueDates.map((date) => {
+              <NavigationMenu className={"flex gap-2"}>
+                {uniqueDates.sort().map((date) => {
                   const sampleLayer = layers.find(
                     (layer) => layer.layer_date === date
                   )
                   return (
-                    <DropdownMenu key={date}>
-                      <DropdownMenuTrigger
+                    // <DropdownMenu key={date}>
+                    //   <DropdownMenuTrigger
+                    //     onClick={() => {
+                    //       setCurrentDate(sampleLayer.layer_date)
+                    //       setCurrentLayer(sampleLayer)
+                    //     }}
+                    //     className={`cursor-pointer relative`}
+                    //   >
+                    //     <div className="mb-[6px] bg-gray-50 px-4 py-1 text-sm hover:bg-gray-200 w-full">
+                    //       {new Date(date).toLocaleDateString("en-GB", {
+                    //         day: "2-digit",
+                    //         month: "short",
+                    //       })}
+                    //     </div>
+                    //     {date === currentDate && (
+                    //       <div className="h-[6px] w-full absolute bottom-0 left-0 bg-slate-600"></div>
+                    //     )}
+                    //   </DropdownMenuTrigger>
+                    //   <DropdownMenuContent className={"mb-2"}>
+                    //     <DropdownMenuItem>Gempa 1, 12.00</DropdownMenuItem>
+                    //     <DropdownMenuItem>Gempa 2, 15.00</DropdownMenuItem>
+                    //     <DropdownMenuItem>Gempa 3, 17.00</DropdownMenuItem>
+                    //   </DropdownMenuContent>
+                    <NavigationMenuItem
+                      key={date}
+                      className={"list-none"}
+                    >
+                      <NavigationMenuLink
                         onClick={() => {
                           setCurrentDate(sampleLayer.layer_date)
                           setCurrentLayer(sampleLayer)
                         }}
-                        className={`cursor-pointer relative`}
+                        className={`cursor-pointer px-4 bg-gray-50 hover:bg-gray-50 relative`}
                       >
-                        <div className="mb-[6px] bg-gray-50 px-4 py-1 text-sm hover:bg-gray-200 w-full">
+                        <div className={"mb-1"}>
                           {new Date(date).toLocaleDateString("en-GB", {
                             day: "2-digit",
                             month: "short",
@@ -210,35 +305,12 @@ function Navigation({ layers: allLayers, currentLayer, setCurrentLayer }) {
                         {date === currentDate && (
                           <div className="h-[6px] w-full absolute bottom-0 left-0 bg-slate-600"></div>
                         )}
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent className={"mb-2"}>
-                        <DropdownMenuItem>Gempa 1, 12.00</DropdownMenuItem>
-                        <DropdownMenuItem>Gempa 2, 15.00</DropdownMenuItem>
-                        <DropdownMenuItem>Gempa 3, 17.00</DropdownMenuItem>
-                      </DropdownMenuContent>
-                      {/* <NavigationMenuItem key={date}>
-                        <NavigationMenuLink
-                          onClick={() => {
-                            setCurrentDate(sampleLayer.layer_date)
-                            setCurrentLayer(sampleLayer)
-                          }}
-                          className={`cursor-pointer px-4 bg-gray-50 hover:bg-gray-50 relative`}
-                        >
-                          <div className="mb-1">
-                            {new Date(date).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                            })}
-                          </div>
-                          {date === currentDate && (
-                            <div className="h-[6px] w-full absolute bottom-0 left-0 bg-slate-600"></div>
-                          )}
-                        </NavigationMenuLink>
-                      </NavigationMenuItem> */}
-                    </DropdownMenu>
+                      </NavigationMenuLink>
+                    </NavigationMenuItem>
+                    // </DropdownMenu>
                   )
                 })}
-              </div>
+              </NavigationMenu>
             </div>
           ) : (
             ""

@@ -14,6 +14,20 @@ export const getLayers = async () => {
   }
 }
 
+export const getPublicLayers = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("layers")
+      .select("*")
+      .eq("visibility", "public")
+
+    if (error) throw new Error(error.message)
+    return data
+  } catch (error) {
+    throw error
+  }
+}
+
 export const addLayer = async (data) => {
   const { layer, category, date, source, visibility, description, file } = data
   const layerFile = file // pastikan array kalau react-hook-form

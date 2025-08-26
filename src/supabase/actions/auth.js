@@ -48,7 +48,11 @@ export const updateProfile = (values) => async (dispatch, getState) => {
       const { data: emailData, error: emailError } =
         await supabase.auth.updateUser(
           { email },
-          { emailRedirectTo: "http://localhost:5173/auth/callback" }
+          {
+            emailRedirectTo: `${
+              import.meta.env.VITE_FRONTEND_API
+            }/auth/callback`,
+          }
         )
 
       if (emailError) throw emailError

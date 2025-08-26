@@ -1,4 +1,4 @@
-import { GoogleMap, useJsApiLoader, Marker } from "@react-google-maps/api"
+import { GoogleMap, Marker } from "@react-google-maps/api"
 import CustomZoom from "./CustomZoom"
 import { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "./ui/button"
@@ -17,12 +17,7 @@ const center = {
   lng: 140.1065,
 } // Kota Chiba
 
-function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
-  const { isLoaded } = useJsApiLoader({
-    id: "google-map-script",
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-  })
-
+function GoogleMaps({ currentLayer, searchResult }) {
   const mapRef = useRef(null)
 
   const onLoad = useCallback((map) => {
@@ -133,7 +128,15 @@ function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
       })
   }, [currentLayer])
 
-  return isLoaded ? (
+  useEffect(() => {
+    if (searchResult && mapRef.current) {
+      mapRef.current.panTo(searchResult)
+      mapRef.current.setZoom(15)
+      setUserLocation(null)
+    }
+  }, [searchResult])
+
+  return (
     <div className="z-10">
       <GoogleMap
         mapContainerStyle={containerStyle}
@@ -153,6 +156,12 @@ function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
             icon={{
               url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
             }}
+          />
+        )}
+        {searchResult && (
+          <Marker
+            position={searchResult}
+            title="Hasil Pencarian"
           />
         )}
         <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
@@ -241,8 +250,6 @@ function GoogleMaps({ layers, currentLayer, setCurrentLayer }) {
         </div>
       </GoogleMap>
     </div>
-  ) : (
-    <p>Loading map...</p>
   )
 }
 

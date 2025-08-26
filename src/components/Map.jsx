@@ -1,22 +1,30 @@
 import React, { useEffect, useState } from "react"
+import { useJsApiLoader } from "@react-google-maps/api"
 import GoogleMaps from "./GoogleMaps"
 import Navigation from "./Navigation"
-import { getLayers } from "@/supabase/actions/layer"
+import { getLayers, getPublicLayers } from "@/supabase/actions/layer"
 import { toast } from "sonner"
 
+const libraries = ["places", "visualization"]
+
 function Map() {
+  const { isLoaded } = useJsApiLoader({
+    id: "google-map-script",
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries,
+  })
+
   const [layers, setLayers] = useState([])
   const [currentLayer, setCurrentLayer] = useState({})
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
-
-  useEffect(() => {}, [])
+  const [searchResult, setSearchResult] = useState(null)
 
   useEffect(() => {
     const fetchLayers = async () => {
       setLoading(true)
       try {
-        const data = await getLayers()
+        const data = await getPublicLayers()
         setLayers(data)
         setCurrentLayer(data[0])
 
@@ -40,24 +48,20 @@ function Map() {
     fetchLayers()
   }, [])
 
+  if (!isLoaded || loading) return <p>Loading Map...</p>
+
   return (
     <div className="flex-1">
-      {loading ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          <GoogleMaps
-            layers={layers}
-            currentLayer={currentLayer}
-            setCurrentLayer={setCurrentLayer}
-          />
-          <Navigation
-            layers={layers}
-            currentLayer={currentLayer}
-            setCurrentLayer={setCurrentLayer}
-          />
-        </>
-      )}
+      <GoogleMaps
+        searchResult={searchResult}
+        currentLayer={currentLayer}
+      />
+      <Navigation
+        setSearchResult={setSearchResult}
+        layers={layers}
+        currentLayer={currentLayer}
+        setCurrentLayer={setCurrentLayer}
+      />
     </div>
   )
 }
