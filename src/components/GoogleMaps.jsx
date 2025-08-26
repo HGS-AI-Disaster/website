@@ -1,4 +1,4 @@
-import { GoogleMap, Marker } from "@react-google-maps/api"
+import { GoogleMap, HeatmapLayer, Marker } from "@react-google-maps/api"
 import CustomZoom from "./CustomZoom"
 import { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "./ui/button"
@@ -19,6 +19,7 @@ const center = {
 
 function GoogleMaps({ currentLayer, searchResult }) {
   const mapRef = useRef(null)
+  const [heatmapData, setHeatmapData] = useState([])
 
   const onLoad = useCallback((map) => {
     mapRef.current = map
@@ -54,10 +55,23 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     const geojsonUrl = currentLayer?.file_url
 
+    setHeatmapData([])
+    // Load new GeoJSON layer
     fetch(geojsonUrl)
       .then((res) => res.json())
-      .then((data) => {
-        map.data.addGeoJson(data)
+      .then((geojson) => {
+        if (!geojson.features) return
+        const points = geojson.features
+          .filter((f) => f.geometry.type === "Point")
+          .map(
+            (f) =>
+              new window.google.maps.LatLng(
+                f.geometry.coordinates[1], // lat
+                f.geometry.coordinates[0] // lng
+              )
+          )
+
+        setHeatmapData(points)
       })
       .catch((err) => {
         console.error("Failed to load GeoJSON:", err)
@@ -77,8 +91,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       map.setZoom(map.getZoom() - 1)
     }
   }
-
-  console.log("test")
 
   const [userLocation, setUserLocation] = useState(null)
 
@@ -108,6 +120,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
   useEffect(() => {
     if (!mapRef.current || !currentLayer.file_url) return
 
+    setHeatmapData([])
+
     const map = mapRef.current
 
     // Clear previous GeoJSON layer
@@ -122,8 +136,19 @@ function GoogleMaps({ currentLayer, searchResult }) {
     // Load new GeoJSON layer
     fetch(currentLayer?.file_url)
       .then((res) => res.json())
-      .then((data) => {
-        map.data.addGeoJson(data)
+      .then((geojson) => {
+        if (!geojson.features) return
+        const points = geojson.features
+          .filter((f) => f.geometry.type === "Point")
+          .map(
+            (f) =>
+              new window.google.maps.LatLng(
+                f.geometry.coordinates[1], // lat
+                f.geometry.coordinates[0] // lng
+              )
+          )
+
+        setHeatmapData(points)
       })
       .catch((err) => {
         console.error("Failed to load GeoJSON:", err)
@@ -151,6 +176,16 @@ function GoogleMaps({ currentLayer, searchResult }) {
         }}
         onLoad={onLoad}
       >
+        {/* Heatmap */}
+        {heatmapData.length > 0 && (
+          <HeatmapLayer
+            data={heatmapData}
+            options={{
+              radius: 40, // makin besar makin melebar
+              opacity: 0.7, // transparansi
+            }}
+          />
+        )}
         {userLocation && (
           <Marker
             position={userLocation}
@@ -166,6 +201,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
             title="Hasil Pencarian"
           />
         )}
+
         <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
           <Button
             // onClick={zoomIn}
