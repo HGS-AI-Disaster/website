@@ -140,14 +140,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
         if (!geojson.features) return
         const points = geojson.features
           .filter((f) => f.geometry.type === "Point")
-          .map(
-            (f) =>
-              new window.google.maps.LatLng(
-                f.geometry.coordinates[1], // lat
-                f.geometry.coordinates[0] // lng
-              )
-          )
-
+          .map((f) => ({
+            location: new window.google.maps.LatLng(
+              f.geometry.coordinates[1], // lat
+              f.geometry.coordinates[0] // lng
+            ),
+            weight: f.properties.distance_km, // ambil magnitude dari GeoJSON
+          }))
         setHeatmapData(points)
       })
       .catch((err) => {
@@ -168,7 +167,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
-        zoom={12}
+        zoom={9}
         options={{
           disableDefaultUI: true,
           gestureHandling: "greedy",
@@ -178,13 +177,71 @@ function GoogleMaps({ currentLayer, searchResult }) {
       >
         {/* Heatmap */}
         {heatmapData.length > 0 && (
-          <HeatmapLayer
-            data={heatmapData}
-            options={{
-              radius: 40, // makin besar makin melebar
-              opacity: 0.7, // transparansi
-            }}
-          />
+          <>
+            {/* Low magnitude (ijo) */}
+            <HeatmapLayer
+              data={heatmapData
+                .filter((p) => p.weight > 60)
+                .map((p) => p.location)}
+              options={{
+                radius: 10,
+                opacity: 0.6,
+                gradient: [
+                  "rgba(0,255,0,0)", // transparan
+                  "rgba(144,238,144,0.6)", // hijau muda
+                  "rgba(124,253,44,0.6)", // hijau solid
+                ],
+              }}
+            />
+
+            {/* Moderate magnitude (kuning) */}
+            <HeatmapLayer
+              data={heatmapData
+                .filter((p) => p.weight < 60)
+                .map((p) => p.location)}
+              options={{
+                radius: 10,
+                opacity: 0.6,
+                gradient: [
+                  "rgba(255,255,0,0)",
+                  "rgba(255,255,150,0.6)",
+                  "rgba(244,244,0,0.47)",
+                ],
+              }}
+            />
+
+            {/* High magnitude (oranye) */}
+            <HeatmapLayer
+              data={heatmapData
+                .filter((p) => p.weight < 40)
+                .map((p) => p.location)}
+              options={{
+                radius: 10,
+                opacity: 0.6,
+                gradient: [
+                  "rgba(255,165,0,0)",
+                  "rgba(255,200,120,0.6)",
+                  "rgba(255,50,0,0.44)",
+                ],
+              }}
+            />
+
+            {/* Severe magnitude (merah) */}
+            <HeatmapLayer
+              data={heatmapData
+                .filter((p) => p.weight < 20)
+                .map((p) => p.location)}
+              options={{
+                radius: 10,
+                opacity: 0.6,
+                gradient: [
+                  "rgba(255,0,0,0)",
+                  "rgba(255,100,100,0.6)",
+                  "rgba(175,0,0,0.60)",
+                ],
+              }}
+            />
+          </>
         )}
         {userLocation && (
           <Marker
