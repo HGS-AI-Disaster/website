@@ -78,6 +78,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
+  console.log("test")
+
   const [userLocation, setUserLocation] = useState(null)
 
   function getCurrentLocation() {
