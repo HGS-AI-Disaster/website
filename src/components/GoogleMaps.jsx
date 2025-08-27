@@ -1,4 +1,9 @@
-import { GoogleMap, Marker } from "@react-google-maps/api"
+import {
+  GoogleMap,
+  Marker,
+  MarkerClusterer,
+  MarkerF,
+} from "@react-google-maps/api"
 import CustomZoom from "./CustomZoom"
 import { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "./ui/button"
@@ -19,6 +24,7 @@ const center = {
 
 function GoogleMaps({ currentLayer, searchResult }) {
   const mapRef = useRef(null)
+  const [markers, setMarkers] = useState([])
 
   const onLoad = useCallback((map) => {
     mapRef.current = map
@@ -106,6 +112,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
   useEffect(() => {
     if (!mapRef.current || !currentLayer.file_url) return
 
+    setMarkers([]) // reset dulu
+
     const map = mapRef.current
 
     // Clear previous GeoJSON layer
@@ -120,8 +128,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
     // Load new GeoJSON layer
     fetch(currentLayer?.file_url)
       .then((res) => res.json())
-      .then((data) => {
-        map.data.addGeoJson(data)
+      .then((geojson) => {
+        if (!geojson.features) return
+        const points = geojson.features
+          .filter((f) => f.geometry.type === "Point")
+          .map((f) => ({
+            lat: f.geometry.coordinates[1],
+            lng: f.geometry.coordinates[0],
+          }))
+        setMarkers(points)
       })
       .catch((err) => {
         console.error("Failed to load GeoJSON:", err)
@@ -149,6 +164,17 @@ function GoogleMaps({ currentLayer, searchResult }) {
         }}
         onLoad={onLoad}
       >
+        <MarkerClusterer>
+          {(clusterer) =>
+            markers.map((pos, i) => (
+              <MarkerF
+                key={i}
+                position={pos}
+                clusterer={clusterer}
+              />
+            ))
+          }
+        </MarkerClusterer>
         {userLocation && (
           <Marker
             position={userLocation}
