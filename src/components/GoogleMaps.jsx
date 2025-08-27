@@ -13,8 +13,8 @@ const containerStyle = {
 }
 
 const center = {
-  lat: 35.6074,
-  lng: 140.1065,
+  lat: 34.910608393567081,
+  lng: 139.829819886019976,
 } // Kota Chiba
 
 function GoogleMaps({ currentLayer, searchResult }) {
@@ -141,7 +141,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       <GoogleMap
         mapContainerStyle={containerStyle}
         center={center}
-        zoom={12}
+        zoom={17}
         options={{
           disableDefaultUI: true,
           gestureHandling: "greedy",
