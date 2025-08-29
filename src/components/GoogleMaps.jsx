@@ -18,31 +18,56 @@ const center = {
   lng: 139.829819886019976,
 }
 
+function mergeByLabel(features, label) {
+  // filter hanya Polygon / MultiPolygon
+  const sameLabel = features.filter(
+    (f) =>
+      f.properties.Label === label &&
+      (f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon")
+  )
+
+  if (sameLabel.length === 0) return null
+  if (sameLabel.length === 1) return sameLabel[0]
+
+  let merged = sameLabel[0]
+  for (let i = 1; i < sameLabel.length; i++) {
+    try {
+      merged = turf.union(merged, sameLabel[i])
+    } catch (e) {
+      console.warn("Union failed, fallback pakai MultiPolygon:", e)
+      return turf.multiPolygon(
+        sameLabel.map((f) => f.geometry.coordinates),
+        { Label: label }
+      )
+    }
+  }
+
+  return merged
+}
+
 function GoogleMaps({ currentLayer, searchResult }) {
   const mapRef = useRef(null)
-  const [mapReady, setMapReady] = useState(false)
 
-  // hanya set mapRef + style di onLoad (jangan fetch di sini)
   const onLoad = useCallback((map) => {
     mapRef.current = map
-    setMapReady(true)
 
+    // Style polygon berdasarkan Label
     map.data.setStyle((feature) => {
-      const severity = feature.getProperty("zone")
-      let fillColor = "#ffffff"
+      const label = feature.getProperty("Label")
+      let fillColor = "#9e9e9e" // default abu
 
-      switch (severity) {
-        case "severe":
-          fillColor = "#f44336"
+      switch (label) {
+        case "0":
+          fillColor = "#4caf50" // hijau
           break
-        case "high":
-          fillColor = "#ff9800"
+        case "1":
+          fillColor = "#ffeb3b" // kuning
           break
-        case "moderate":
-          fillColor = "#ffeb3b"
+        case "2":
+          fillColor = "#ff9800" // orange
           break
-        case "low":
-          fillColor = "#4caf50"
+        case "3":
+          fillColor = "#f44336" // merah
           break
         default:
           fillColor = "#9e9e9e"
@@ -50,7 +75,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
       return {
         fillColor,
-        strokeColor: "#ffffff",
+        strokeColor: "#F0F0F0",
         strokeWeight: 1,
         fillOpacity: 0.6,
       }
@@ -91,108 +116,29 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
-  // helper: pastikan polygon tertutup
-  function ensureClosed(feature) {
-    if (!feature || !feature.geometry) return feature
-    if (feature.geometry.type === "Polygon") {
-      const ring = feature.geometry.coordinates[0]
-      const first = ring[0]
-      const last = ring[ring.length - 1]
-      if (first[0] !== last[0] || first[1] !== last[1]) {
-        ring.push(first)
-        feature.geometry.coordinates = [ring]
-      }
-    }
-    return feature
-  }
-
   useEffect(() => {
-    if (!mapReady || !currentLayer?.file_url) return
+    if (!mapRef.current || !currentLayer?.file_url) return
 
     const map = mapRef.current
 
-    // Clear previous GeoJSON layer
-    map.data.forEach((f) => {
-      map.data.remove(f)
-    })
-
-    if (currentLayer.visibility === "private") return
-
     fetch(currentLayer.file_url)
-      .then((res) => {
-        console.log("Fetch status:", res.status)
-        return res.json()
-      })
+      .then((res) => res.json())
       .then((data) => {
-        console.log("GeoJSON data:", data)
-        // ambil hanya fitur Polygon / MultiPolygon
-        const polyFeatures = (data.features || []).filter(
+        // hanya ambil Polygon & MultiPolygon
+        const polyFeatures = data.features.filter(
           (f) =>
-            f &&
-            f.geometry &&
-            (f.geometry.type === "Polygon" ||
-              f.geometry.type === "MultiPolygon")
+            f.geometry.type === "Polygon" || f.geometry.type === "MultiPolygon"
         )
 
-        if (polyFeatures.length === 0) {
-          console.warn("No polygons found in GeoJSON")
-          return
-        }
-
-        // 1) ambil centroid tiap polygon (lebih ringan daripada union)
-        const centroids = polyFeatures.map((f) => turf.centroid(f))
-        // 2) dedup centroids (sederhana)
-        const seen = new Set()
-        const uniquePts = []
-        centroids.forEach((pt) => {
-          const key = pt.geometry.coordinates.join(",")
-          if (!seen.has(key)) {
-            seen.add(key)
-            uniquePts.push(pt)
-          }
+        // 1. Dissolve dulu berdasarkan "Label"
+        const dissolved = turf.dissolve(turf.featureCollection(polyFeatures), {
+          propertyName: "Label",
         })
 
-        const pointCollection = turf.featureCollection(uniquePts)
-
-        // 3) coba concave hull (alpha shape). Tweak maxEdge sesuai kebutuhan
-        //    nilai maxEdge dalam kilometer; mulai coba 0.5 - 2.0
-        let hull = null
-        try {
-          hull = turf.concave(pointCollection, { maxEdge: 1 }) // coba 1 km dulu
-          console.log("Hull created:", hull)
-        } catch (e) {
-          console.warn("concave failed:", e)
-          hull = null
-        }
-
-        // fallback ke convex jika concave gagal
-        if (!hull) {
-          try {
-            hull = turf.convex(pointCollection)
-          } catch (e) {
-            console.error("convex failed:", e)
-            hull = null
-          }
-        }
-
-        if (!hull) {
-          console.error(
-            "Failed to create hull (concave & convex both failed). Rendering original polygons instead."
-          )
-
-          map.data.addGeoJson(data)
-          return
-        }
-
-        const closed = ensureClosed(hull)
-        const mergedFeatureCollection = turf.featureCollection([closed])
-
-        map.data.addGeoJson(mergedFeatureCollection)
+        map.data.addGeoJson(dissolved)
       })
-      .catch((err) => {
-        console.error("Failed to load GeoJSON:", err)
-      })
-  }, [currentLayer, mapRef.current])
+      .catch((err) => console.error("Error loading GeoJSON:", err))
+  }, [currentLayer])
 
   useEffect(() => {
     if (searchResult && mapRef.current) {
@@ -230,16 +176,18 @@ function GoogleMaps({ currentLayer, searchResult }) {
             title="Hasil Pencarian"
           />
         )}
+
+        {/* Kontrol zoom & lokasi */}
         <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
           <Button
             onClick={handleZoomIn}
-            className="cursor-pointer  bg-white hover:bg-gray-200 text-black font-bold"
+            className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
           >
             +
           </Button>
           <Button
             onClick={handleZoomOut}
-            className=" cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
+            className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
           >
             -
           </Button>
