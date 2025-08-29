@@ -109,6 +109,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     if (!mapRef.current || !currentLayer?.file_url) return
 
+    console.log("Test console 2")
+
     const map = mapRef.current
 
     // Clear previous GeoJSON layer
