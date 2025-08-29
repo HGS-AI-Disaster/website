@@ -20,10 +20,12 @@ const center = {
 
 function GoogleMaps({ currentLayer, searchResult }) {
   const mapRef = useRef(null)
+  const [mapReady, setMapReady] = useState(false)
 
   // hanya set mapRef + style di onLoad (jangan fetch di sini)
   const onLoad = useCallback((map) => {
     mapRef.current = map
+    setMapReady(true)
 
     map.data.setStyle((feature) => {
       const severity = feature.getProperty("zone")
@@ -105,7 +107,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
-    if (!mapRef.current || !currentLayer?.file_url) return
+    if (!mapReady || !currentLayer?.file_url) return
 
     const map = mapRef.current
 
