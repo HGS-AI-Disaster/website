@@ -176,7 +176,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
           map.data.addGeoJson(data)
           return
         }
-        
+
         const closed = ensureClosed(hull)
         const mergedFeatureCollection = turf.featureCollection([closed])
 
@@ -185,6 +185,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
       .catch((err) => {
         console.error("Failed to load GeoJSON:", err)
       })
+
+    console.log("test")
   }, [currentLayer])
 
   useEffect(() => {
