@@ -105,9 +105,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
-    console.log("Test console.")
-
-    console.log(!mapRef.current || !currentLayer?.file_url)
     if (!mapRef.current || !currentLayer?.file_url) return
 
     const map = mapRef.current

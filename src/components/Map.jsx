@@ -15,7 +15,7 @@ function Map() {
   })
 
   const [layers, setLayers] = useState([])
-  const [currentLayer, setCurrentLayer] = useState({})
+  const [currentLayer, setCurrentLayer] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [searchResult, setSearchResult] = useState(null)
@@ -25,8 +25,10 @@ function Map() {
       setLoading(true)
       try {
         const data = await getPublicLayers()
-        setLayers(data)
-        setCurrentLayer(data[0])
+
+        const validLayers = data.filter((l) => l.file_url)
+        setLayers(validLayers)
+        setCurrentLayer(validLayers[0] || null)
 
         if (!data.length) {
           toast.error(
@@ -52,10 +54,12 @@ function Map() {
 
   return (
     <div className="flex-1">
-      <GoogleMaps
-        searchResult={searchResult}
-        currentLayer={currentLayer}
-      />
+      {currentLayer && (
+        <GoogleMaps
+          searchResult={searchResult}
+          currentLayer={currentLayer}
+        />
+      )}
       <Navigation
         setSearchResult={setSearchResult}
         layers={layers}
