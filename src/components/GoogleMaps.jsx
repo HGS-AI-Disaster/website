@@ -117,16 +117,24 @@ function GoogleMaps({ currentLayer, searchResult }) {
     if (currentLayer.visibility === "private") return
 
     fetch(currentLayer.file_url)
-      .then((res) => res.json())
+      .then((res) => {
+        console.log("Fetch status:", res.status)
+        res.json()
+      })
       .then((data) => {
+        console.log("GeoJSON data:", data)
         // ambil hanya fitur Polygon / MultiPolygon
-        const polyFeatures = (data.features || []).filter(
-          (f) =>
-            f &&
-            f.geometry &&
-            (f.geometry.type === "Polygon" ||
-              f.geometry.type === "MultiPolygon")
-        )
+        const polyFeatures = (data.features || [])
+          .filter(
+            (f) =>
+              f &&
+              f.geometry &&
+              (f.geometry.type === "Polygon" ||
+                f.geometry.type === "MultiPolygon")
+          )
+          .catch((err) => {
+            console.error("Failed to load GeoJSON:", err)
+          })
 
         if (polyFeatures.length === 0) {
           console.warn("No polygons found in GeoJSON")
