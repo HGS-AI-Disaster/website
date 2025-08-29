@@ -190,7 +190,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       .catch((err) => {
         console.error("Failed to load GeoJSON:", err)
       })
-  }, [currentLayer])
+  }, [currentLayer, mapRef.current])
 
   useEffect(() => {
     if (searchResult && mapRef.current) {
