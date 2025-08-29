@@ -153,6 +153,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
         let hull = null
         try {
           hull = turf.concave(pointCollection, { maxEdge: 1 }) // coba 1 km dulu
+          console.log("Hull created:", hull)
         } catch (e) {
           console.warn("concave failed:", e)
           hull = null
@@ -185,8 +186,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       .catch((err) => {
         console.error("Failed to load GeoJSON:", err)
       })
-
-    console.log("test")
   }, [currentLayer])
 
   useEffect(() => {
