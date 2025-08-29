@@ -1,5 +1,5 @@
 import AuthCallback from "@/pages/AuthCallback"
-import Home from "@/pages/home"
+import Home from "@/pages/Home"
 import { createBrowserRouter } from "react-router-dom"
 
 const router = createBrowserRouter([
