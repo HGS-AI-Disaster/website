@@ -3,6 +3,7 @@ import CustomZoom from "./CustomZoom"
 import { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "./ui/button"
 import { Navigation2 } from "lucide-react"
+import * as turf from "@turf/turf"
 
 const containerStyle = {
   width: "100%",
@@ -15,11 +16,12 @@ const containerStyle = {
 const center = {
   lat: 34.910608393567081,
   lng: 139.829819886019976,
-} // Kota Chiba
+}
 
 function GoogleMaps({ currentLayer, searchResult }) {
   const mapRef = useRef(null)
 
+  // hanya set mapRef + style di onLoad (jangan fetch di sini)
   const onLoad = useCallback((map) => {
     mapRef.current = map
 
@@ -29,56 +31,39 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
       switch (severity) {
         case "severe":
-          fillColor = "#f44336" // merah
+          fillColor = "#f44336"
           break
         case "high":
-          fillColor = "#ff9800" // oranye
+          fillColor = "#ff9800"
           break
         case "moderate":
-          fillColor = "#ffeb3b" // kuning
+          fillColor = "#ffeb3b"
           break
         case "low":
-          fillColor = "#4caf50" // hijau
+          fillColor = "#4caf50"
           break
         default:
-          fillColor = "#9e9e9e" // abu-abu
+          fillColor = "#9e9e9e"
       }
 
       return {
-        fillColor: fillColor,
+        fillColor,
         strokeColor: "#ffffff",
         strokeWeight: 1,
         fillOpacity: 0.6,
       }
     })
-
-    const geojsonUrl = currentLayer?.file_url
-
-    fetch(geojsonUrl)
-      .then((res) => res.json())
-      .then((data) => {
-        map.data.addGeoJson(data)
-      })
-      .catch((err) => {
-        console.error("Failed to load GeoJSON:", err)
-      })
   }, [])
 
   const handleZoomIn = () => {
     const map = mapRef.current
-    if (map) {
-      map.setZoom(map.getZoom() + 1)
-    }
+    if (map) map.setZoom(map.getZoom() + 1)
   }
 
   const handleZoomOut = () => {
     const map = mapRef.current
-    if (map) {
-      map.setZoom(map.getZoom() - 1)
-    }
+    if (map) map.setZoom(map.getZoom() - 1)
   }
-
-  console.log("test")
 
   const [userLocation, setUserLocation] = useState(null)
 
@@ -90,7 +75,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           }
-
           setUserLocation(pos)
           mapRef.current?.panTo(pos)
           mapRef.current?.setZoom(15)
@@ -105,25 +89,98 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
+  // helper: pastikan polygon tertutup
+  function ensureClosed(feature) {
+    if (!feature || !feature.geometry) return feature
+    if (feature.geometry.type === "Polygon") {
+      const ring = feature.geometry.coordinates[0]
+      const first = ring[0]
+      const last = ring[ring.length - 1]
+      if (first[0] !== last[0] || first[1] !== last[1]) {
+        ring.push(first)
+        feature.geometry.coordinates = [ring]
+      }
+    }
+    return feature
+  }
+
   useEffect(() => {
-    if (!mapRef.current || !currentLayer.file_url) return
+    if (!mapRef.current || !currentLayer?.file_url) return
 
     const map = mapRef.current
 
     // Clear previous GeoJSON layer
-    map.data.forEach((feature) => {
-      map.data.remove(feature)
+    map.data.forEach((f) => {
+      map.data.remove(f)
     })
 
-    if (currentLayer.visibility === "private") {
-      return
-    }
+    if (currentLayer.visibility === "private") return
 
-    // Load new GeoJSON layer
-    fetch(currentLayer?.file_url)
+    fetch(currentLayer.file_url)
       .then((res) => res.json())
       .then((data) => {
-        map.data.addGeoJson(data)
+        // ambil hanya fitur Polygon / MultiPolygon
+        const polyFeatures = (data.features || []).filter(
+          (f) =>
+            f &&
+            f.geometry &&
+            (f.geometry.type === "Polygon" ||
+              f.geometry.type === "MultiPolygon")
+        )
+
+        if (polyFeatures.length === 0) {
+          console.warn("No polygons found in GeoJSON")
+          return
+        }
+
+        // 1) ambil centroid tiap polygon (lebih ringan daripada union)
+        const centroids = polyFeatures.map((f) => turf.centroid(f))
+        // 2) dedup centroids (sederhana)
+        const seen = new Set()
+        const uniquePts = []
+        centroids.forEach((pt) => {
+          const key = pt.geometry.coordinates.join(",")
+          if (!seen.has(key)) {
+            seen.add(key)
+            uniquePts.push(pt)
+          }
+        })
+
+        const pointCollection = turf.featureCollection(uniquePts)
+
+        // 3) coba concave hull (alpha shape). Tweak maxEdge sesuai kebutuhan
+        //    nilai maxEdge dalam kilometer; mulai coba 0.5 - 2.0
+        let hull = null
+        try {
+          hull = turf.concave(pointCollection, { maxEdge: 1 }) // coba 1 km dulu
+        } catch (e) {
+          console.warn("concave failed:", e)
+          hull = null
+        }
+
+        // fallback ke convex jika concave gagal
+        if (!hull) {
+          try {
+            hull = turf.convex(pointCollection)
+          } catch (e) {
+            console.error("convex failed:", e)
+            hull = null
+          }
+        }
+
+        if (!hull) {
+          console.error(
+            "Failed to create hull (concave & convex both failed). Rendering original polygons instead."
+          )
+
+          map.data.addGeoJson(data)
+          return
+        }
+        
+        const closed = ensureClosed(hull)
+        const mergedFeatureCollection = turf.featureCollection([closed])
+
+        map.data.addGeoJson(mergedFeatureCollection)
       })
       .catch((err) => {
         console.error("Failed to load GeoJSON:", err)
@@ -168,81 +225,24 @@ function GoogleMaps({ currentLayer, searchResult }) {
         )}
         <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
           <Button
-            // onClick={zoomIn}
             onClick={handleZoomIn}
             className="cursor-pointer  bg-white hover:bg-gray-200 text-black font-bold"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              className="bi bi-zoom-in"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11M13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0"
-              />
-              <path d="M10.344 11.742q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1 6.5 6.5 0 0 1-1.398 1.4z" />
-              <path
-                fill-rule="evenodd"
-                d="M6.5 3a.5.5 0 0 1 .5.5V6h2.5a.5.5 0 0 1 0 1H7v2.5a.5.5 0 0 1-1 0V7H3.5a.5.5 0 0 1 0-1H6V3.5a.5.5 0 0 1 .5-.5"
-              />
-            </svg>
+            +
           </Button>
           <Button
             onClick={handleZoomOut}
             className=" cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              className="bi bi-zoom-out"
-              viewBox="0 0 16 16"
-            >
-              <path
-                fill-rule="evenodd"
-                d="M6.5 12a5.5 5.5 0 1 0 0-11 5.5 5.5 0 0 0 0 11M13 6.5a6.5 6.5 0 1 1-13 0 6.5 6.5 0 0 1 13 0"
-              />
-              <path d="M10.344 11.742q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1 6.5 6.5 0 0 1-1.398 1.4z" />
-              <path
-                fill-rule="evenodd"
-                d="M3 6.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5"
-              />
-            </svg>
+            -
           </Button>
           <Button
-            className={
-              "w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
-            }
-            onClick={() => {
-              getCurrentLocation((pos) => {
-                mapRef.current?.panTo(pos)
-                mapRef.current?.setZoom(15)
-              })
-            }}
-            // disabled={locating}
+            className="w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
+            onClick={getCurrentLocation}
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              fill="currentColor"
-              className="bi bi-record-circle"
-              viewBox="0 0 16 16"
-            >
-              <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
-              <path d="M11 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0" />
-            </svg>
+            🎯
           </Button>
-          <Button
-            className={
-              "cursor-pointer bg-gray-50 hover:bg-gray-200 h-[45px] w-[50px]"
-            }
-          >
+          <Button className="cursor-pointer bg-gray-50 hover:bg-gray-200 h-[45px] w-[50px]">
             <Navigation2
               fill="black"
               stroke="black"
