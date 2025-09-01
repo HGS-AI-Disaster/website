@@ -167,7 +167,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
             })
 
             const polygonsData = geoJsonToPolygons(dissolved)
-            console.log(polygonsData)
+            console.log("polygonData:", polygonsData)
             setPolygons(polygonsData)
           })
           .catch((err) => console.error("Error loading GeoJSON:", err))
