@@ -55,39 +55,82 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [polygons, setPolygons] = useState([])
   const mapRef = useRef(null)
 
-  const onLoad = useCallback((map) => {
-    mapRef.current = map
+  const fetchFileUrl = async (url) => {
+    try {
+      setLoading(true) // mulai loading
+      fetch(url)
+        .then((res) => res.json())
+        .then((data) => {
+          const polyFeatures = data.features.filter(
+            (f) =>
+              f.geometry.type === "Polygon" ||
+              f.geometry.type === "MultiPolygon"
+          )
 
-    // Style polygon berdasarkan Label
-    map.data.setStyle((feature) => {
-      const label = feature.getProperty("Label")
-      let fillColor = "#9e9e9e" // default abu
+          const flattened = []
+          turf.flattenEach(
+            turf.featureCollection(polyFeatures),
+            (currentFeature) => {
+              flattened.push(currentFeature)
+            }
+          )
 
-      switch (label) {
-        case "0":
-          fillColor = "#4caf50" // hijau
-          break
-        case "1":
-          fillColor = "#ffeb3b" // kuning
-          break
-        case "2":
-          fillColor = "#ff9800" // orange
-          break
-        case "3":
-          fillColor = "#f44336" // merah
-          break
-        default:
-          fillColor = "#9e9e9e"
+          let dissolved = turf.dissolve(turf.featureCollection(flattened), {
+            propertyName: "Label",
+          })
+
+          const polygonsData = geoJsonToPolygons(dissolved)
+          setPolygons(polygonsData)
+        })
+        .catch((err) => console.error("Error loading GeoJSON:", err))
+    } catch (error) {
+      console.error("Error loading GeoJSON:", error)
+    }
+
+    setLoading(false)
+  }
+
+  const onLoad = useCallback(
+    (map) => {
+      mapRef.current = map
+
+      // Style polygon berdasarkan Label
+      map.data.setStyle((feature) => {
+        const label = feature.getProperty("Label")
+        let fillColor = "#9e9e9e" // default abu
+
+        switch (label) {
+          case "0":
+            fillColor = "#4caf50" // hijau
+            break
+          case "1":
+            fillColor = "#ffeb3b" // kuning
+            break
+          case "2":
+            fillColor = "#ff9800" // orange
+            break
+          case "3":
+            fillColor = "#f44336" // merah
+            break
+          default:
+            fillColor = "#9e9e9e"
+        }
+
+        return {
+          fillColor,
+          strokeColor: "#F0F0F0",
+          strokeWeight: 0.5,
+          fillOpacity: 0.6,
+        }
+      })
+
+      if (currentLayer?.file_url) {
+        console.log("Map ready, fetch GeoJSON:", currentLayer.file_url)
+        fetchFileUrl(currentLayer.file_url)
       }
-
-      return {
-        fillColor,
-        strokeColor: "#F0F0F0",
-        strokeWeight: 0.5,
-        fillOpacity: 0.6,
-      }
-    })
-  }, [])
+    },
+    [currentLayer]
+  )
 
   const handleZoomIn = () => {
     const map = mapRef.current
@@ -143,45 +186,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
     if (!mapRef.current || !currentLayer?.file_url) return
     console.log("Test 3")
 
-    const map = mapRef.current
-
-    const fetchFileUrl = async (url) => {
-      try {
-        setLoading(true) // mulai loading
-        fetch(url)
-          .then((res) => res.json())
-          .then((data) => {
-            const polyFeatures = data.features.filter(
-              (f) =>
-                f.geometry.type === "Polygon" ||
-                f.geometry.type === "MultiPolygon"
-            )
-
-            const flattened = []
-            turf.flattenEach(
-              turf.featureCollection(polyFeatures),
-              (currentFeature) => {
-                flattened.push(currentFeature)
-              }
-            )
-
-            let dissolved = turf.dissolve(turf.featureCollection(flattened), {
-              propertyName: "Label",
-            })
-
-            const polygonsData = geoJsonToPolygons(dissolved)
-            setPolygons(polygonsData)
-          })
-          .catch((err) => console.error("Error loading GeoJSON:", err))
-      } catch (error) {
-        console.error("Error loading GeoJSON:", error)
-      }
-
-      setLoading(false)
-    }
+    console.log("Layer updated, fetch GeoJSON:", currentLayer.file_url)
+    fetchFileUrl(currentLayer.file_url)
 
     fetchFileUrl(currentLayer.file_url)
-  }, [currentLayer])
+  }, [currentLayer, mapRef.current])
 
   useEffect(() => {
     if (searchResult && mapRef.current) {
