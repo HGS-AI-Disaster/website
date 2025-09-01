@@ -68,8 +68,6 @@ export const addLayer = async (data) => {
 
   if (addLayerError) throw addLayerError
 
-  console.log(addLayerData)
-
   return addLayerData
 }
 
@@ -96,13 +94,12 @@ export const editLayer = async ({ id, data }) => {
 
   if (file) {
     const oldFile = updatedData.file_url.split("/").pop()
-    console.log(updatedData.file_url)
+
     const { error: deleteError } = await supabase.storage
       .from("layers")
       .remove([oldFile])
 
     if (deleteError) {
-      console.log(deleteError)
       throw deleteError
     }
 

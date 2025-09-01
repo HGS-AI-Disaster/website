@@ -94,7 +94,6 @@ function Navigation({
                           onClick={(e) => {
                             e.preventDefault()
                             setCurrentLayer(layer)
-                            console.log(layer.layer)
                           }}
                           className="cursor-default"
                         >
@@ -136,7 +135,6 @@ function Navigation({
                           onClick={(e) => {
                             e.preventDefault()
                             setCurrentLayer(layer)
-                            console.log(layer.layer)
                           }}
                           className="cursor-default"
                         >
@@ -178,7 +176,6 @@ function Navigation({
                           onClick={(e) => {
                             e.preventDefault()
                             setCurrentLayer(layer)
-                            console.log(layer.layer)
                           }}
                           className="cursor-default"
                         >

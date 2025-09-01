@@ -4,6 +4,7 @@ import GoogleMaps from "./GoogleMaps"
 import Navigation from "./Navigation"
 import { getLayers, getPublicLayers } from "@/supabase/actions/layer"
 import { toast } from "sonner"
+import { data } from "react-router-dom"
 
 const libraries = ["places", "visualization"]
 
@@ -13,8 +14,6 @@ function Map() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
     libraries,
   })
-
-  console.log(import.meta.env.VITE_GOOGLE_MAPS_API_KEY)
 
   const [layers, setLayers] = useState([])
   const [currentLayer, setCurrentLayer] = useState(null)
@@ -46,6 +45,7 @@ function Map() {
         setError(err)
       } finally {
         setLoading(false)
+        console.log(currentLayer)
       }
     }
 

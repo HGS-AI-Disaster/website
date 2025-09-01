@@ -23,7 +23,7 @@ function Home() {
           .eq("id", data.session?.user.id)
           .single()
         if (error) throw error
-        console.log(profileData)
+
         dispatch(setProfile(profileData))
       }
 
