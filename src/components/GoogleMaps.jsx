@@ -154,14 +154,17 @@ function GoogleMaps({ currentLayer, searchResult }) {
                 f.geometry.type === "MultiPolygon"
             )
 
-            let dissolved = turf.dissolve(
+            const flattened = []
+            turf.flattenEach(
               turf.featureCollection(polyFeatures),
-              {
-                propertyName: "Label",
+              (currentFeature) => {
+                flattened.push(currentFeature)
               }
             )
 
-            console.log("Dissolved result:", dissolved)
+            let dissolved = turf.dissolve(turf.featureCollection(flattened), {
+              propertyName: "Label",
+            })
 
             const polygonsData = geoJsonToPolygons(dissolved)
             setPolygons(polygonsData)

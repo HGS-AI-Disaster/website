@@ -32,7 +32,7 @@ export const addLayer = async (data) => {
   const { layer, category, date, source, visibility, description, file } = data
   const layerFile = file // pastikan array kalau react-hook-form
   const fileExt = layerFile.name.split(".").pop()
-  const filePath = `layers/${Date.now()}.${fileExt}`
+  const filePath = `${Date.now()}.${fileExt}`
 
   // Upload file ke storage
   const { error: uploadError } = await supabase.storage
@@ -76,10 +76,39 @@ export const addLayer = async (data) => {
 export const editLayer = async ({ id, data }) => {
   const { name, category, date, source, visibility, description, file } = data
 
+  const { data: updatedData, error } = await supabase
+    .from("layers")
+    .update({
+      layer: name,
+      category,
+      layer_date: date,
+      source,
+      visibility,
+      description,
+    })
+    .eq("id", id)
+    .select()
+    .single()
+
+  if (error) {
+    throw error
+  }
+
   if (file) {
+    const oldFile = updatedData.file_url.split("/").pop()
+    console.log(updatedData.file_url)
+    const { error: deleteError } = await supabase.storage
+      .from("layers")
+      .remove([oldFile])
+
+    if (deleteError) {
+      console.log(deleteError)
+      throw deleteError
+    }
+
     const layerFile = file // pastikan array kalau react-hook-form
     const fileExt = layerFile.name.split(".").pop()
-    const filePath = `layers/${Date.now()}.${fileExt}`
+    const filePath = `${Date.now()}.${fileExt}`
 
     const { error: uploadError } = await supabase.storage
       .from("layers")
@@ -105,23 +134,6 @@ export const editLayer = async ({ id, data }) => {
       throw error
     }
   }
-
-  const { error } = await supabase
-    .from("layers")
-    .update({
-      layer: name,
-      category,
-      layer_date: date,
-      source,
-      visibility,
-      description,
-    })
-    .eq("id", id)
-    .select()
-
-  if (error) {
-    throw error
-  }
 }
 
 export const editVisibility = async (id) => {
@@ -145,7 +157,23 @@ export const editVisibility = async (id) => {
 }
 
 export const deleteLayer = async (id) => {
-  const { error } = await supabase.from("layers").delete().eq("id", id).select()
+  const { data, error } = await supabase
+    .from("layers")
+    .delete()
+    .eq("id", id)
+    .select()
+    .single()
 
   if (error) throw error
+
+  console.log(data.file_url.split("/").pop())
+
+  const { error: fileError } = await supabase.storage
+    .from("layers")
+    .remove([data.file_url.split("/").pop()])
+
+  if (fileError) {
+    console.error(fileError)
+    throw fileError
+  }
 }
