@@ -14,6 +14,8 @@ function Map() {
     libraries,
   })
 
+  console.log(import.meta.env.VITE_GOOGLE_MAPS_API_KEY)
+
   const [layers, setLayers] = useState([])
   const [currentLayer, setCurrentLayer] = useState(null)
   const [error, setError] = useState(null)

@@ -166,8 +166,6 @@ export const deleteLayer = async (id) => {
 
   if (error) throw error
 
-  console.log(data.file_url.split("/").pop())
-
   const { error: fileError } = await supabase.storage
     .from("layers")
     .remove([data.file_url.split("/").pop()])
