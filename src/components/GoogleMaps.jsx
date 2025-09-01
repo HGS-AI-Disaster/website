@@ -138,7 +138,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
-    console.log(currentLayer)
     if (!mapRef.current || !currentLayer?.file_url) return
 
     const map = mapRef.current
@@ -168,6 +167,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
             })
 
             const polygonsData = geoJsonToPolygons(dissolved)
+            console.log(polygonsData)
             setPolygons(polygonsData)
           })
           .catch((err) => console.error("Error loading GeoJSON:", err))
