@@ -45,7 +45,6 @@ function Map() {
         setError(err)
       } finally {
         setLoading(false)
-        console.log(currentLayer)
       }
     }
 
@@ -56,12 +55,11 @@ function Map() {
 
   return (
     <div className="flex-1">
-      {currentLayer && (
-        <GoogleMaps
-          searchResult={searchResult}
-          currentLayer={currentLayer}
-        />
-      )}
+      <GoogleMaps
+        searchResult={searchResult}
+        currentLayer={currentLayer}
+      />
+
       <Navigation
         setSearchResult={setSearchResult}
         layers={layers}

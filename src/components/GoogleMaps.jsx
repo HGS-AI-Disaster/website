@@ -50,7 +50,6 @@ function geoJsonToPolygons(geojson) {
 }
 
 function GoogleMaps({ currentLayer, searchResult }) {
-  console.log("Test 1")
   const [loading, setLoading] = useState(false)
   const [polygons, setPolygons] = useState([])
   const mapRef = useRef(null)
@@ -125,7 +124,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       })
 
       if (currentLayer?.file_url) {
-        console.log("Map ready, fetch GeoJSON:", currentLayer.file_url)
         fetchFileUrl(currentLayer.file_url)
       }
     },
@@ -182,11 +180,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
-    console.log("Test 2")
     if (!mapRef.current || !currentLayer?.file_url) return
-    console.log("Test 3")
 
-    console.log("Layer updated, fetch GeoJSON:", currentLayer.file_url)
     fetchFileUrl(currentLayer.file_url)
 
     fetchFileUrl(currentLayer.file_url)
