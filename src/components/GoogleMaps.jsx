@@ -54,6 +54,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [loading, setLoading] = useState(false)
   const [polygons, setPolygons] = useState([])
   const [routePath, setRoutePath] = useState([])
+  const [hospitals, setHospitals] = useState([])
   const mapRef = useRef(null)
 
   const fetchFileUrl = async (url) => {
@@ -242,16 +243,12 @@ function GoogleMaps({ currentLayer, searchResult }) {
     )
 
     const data = await response.json()
-    console.log("Response Routes API:", data)
     return data.routes?.[0] || null
   }
 
   const handleFindExit = async () => {
-    console.log(userLocation, polygons)
     const exitPoint = getNearestExitPoint(userLocation, polygons)
     if (exitPoint) {
-      console.log("Titik keluar terdekat:", exitPoint)
-
       const route = await getRoute(userLocation, exitPoint)
       if (route) {
         const decodedPath = polyline
@@ -267,6 +264,26 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
+  async function fetchGeoJson(url) {
+    try {
+      const res = await fetch(url)
+      const data = await res.json()
+
+      // kalau file GeoJSON valid biasanya bentuknya FeatureCollection
+      if (data.type === "FeatureCollection") {
+        return data.features
+      } else if (data.type === "Feature") {
+        return [data]
+      } else {
+        console.error("File bukan GeoJSON valid:", data)
+        return []
+      }
+    } catch (err) {
+      console.error("Gagal fetch GeoJSON:", err)
+      return []
+    }
+  }
+
   useEffect(() => {
     if (!mapRef.current || !currentLayer?.file_url) return
 
@@ -276,6 +293,41 @@ function GoogleMaps({ currentLayer, searchResult }) {
   useEffect(() => {
     if (polygons.length > 0) {
       handleFindExit()
+    }
+  }, [polygons])
+
+  useEffect(() => {
+    async function loadData() {
+      const hospitalsData = await fetchGeoJson(
+        "https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/layers/hospitals/hospitals.geojson"
+      )
+
+      const hospitalWithZone = hospitalsData.map((h) => {
+        const point = turf.point([
+          h.geometry.coordinates[0],
+          h.geometry.coordinates[1],
+        ])
+        let zoneLabel = null
+
+        polygons.forEach((poly) => {
+          const polygon = turf.polygon([poly.path.map((c) => [c.lng, c.lat])])
+          if (turf.booleanPointInPolygon(point, polygon)) {
+            zoneLabel = poly.label
+          }
+        })
+
+        console.log(zoneLabel)
+
+        return { ...h, zoneLabel }
+      })
+
+      console.log(hospitalWithZone)
+
+      setHospitals(hospitalWithZone)
+    }
+
+    if (polygons.length) {
+      loadData()
     }
   }, [polygons])
 
@@ -315,6 +367,17 @@ function GoogleMaps({ currentLayer, searchResult }) {
               }}
             />
           ))}
+
+          {/* {hospitals.map((f, i) => {
+            const [lng, lat] = f.geometry.coordinates
+            return (
+              <Marker
+                key={i}
+                position={{ lat, lng }}
+                title={f.properties?.name || "Rumah Sakit"}
+              />
+            )
+          })} */}
 
           {userLocation && (
             <Marker
