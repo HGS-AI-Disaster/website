@@ -1,8 +1,9 @@
-import { GoogleMap, Marker, Polygon } from "@react-google-maps/api"
+import { GoogleMap, Marker, Polygon, Polyline } from "@react-google-maps/api"
 import CustomZoom from "./CustomZoom"
 import { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "./ui/button"
 import { LocateFixed, Navigation2, ZoomIn, ZoomOut } from "lucide-react"
+import polyline from "@mapbox/polyline"
 import * as turf from "@turf/turf"
 
 const containerStyle = {
@@ -52,6 +53,7 @@ function geoJsonToPolygons(geojson) {
 function GoogleMaps({ currentLayer, searchResult }) {
   const [loading, setLoading] = useState(false)
   const [polygons, setPolygons] = useState([])
+  const [routePath, setRoutePath] = useState([])
   const mapRef = useRef(null)
 
   const fetchFileUrl = async (url) => {
@@ -140,7 +142,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
     if (map) map.setZoom(map.getZoom() - 1)
   }
 
-  const [userLocation, setUserLocation] = useState(null)
+  const [userLocation, setUserLocation] = useState({
+    lat: 35.22659978407694,
+    lng: 140.3723534530334,
+  })
 
   function getCurrentLocation() {
     if (navigator.geolocation) {
@@ -179,21 +184,108 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
+  function getNearestExitPoint(userLocation, safePolygons) {
+    if (!userLocation || !safePolygons.length) return null
+
+    // Ambil semua polygon hijau (label "0")
+    const greenPolys = safePolygons.filter((p) => p.label === "0")
+    if (!greenPolys.length) return null
+
+    const point = turf.point([userLocation.lng, userLocation.lat])
+    let nearestExit = null
+    let minDistance = Infinity
+
+    greenPolys.forEach((poly) => {
+      const line = turf.lineString(
+        poly.path.map((coord) => [coord.lng, coord.lat])
+      )
+      const candidate = turf.nearestPointOnLine(line, point)
+      const distance = turf.distance(point, candidate)
+
+      if (distance < minDistance) {
+        minDistance = distance
+        nearestExit = {
+          lat: candidate.geometry.coordinates[1],
+          lng: candidate.geometry.coordinates[0],
+        }
+      }
+    })
+
+    return nearestExit
+  }
+
+  async function getRoute(origin, destination) {
+    const response = await fetch(
+      "https://routes.googleapis.com/directions/v2:computeRoutes",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+          "X-Goog-FieldMask":
+            "routes.polyline.encodedPolyline,routes.duration,routes.distanceMeters",
+        },
+        body: JSON.stringify({
+          origin: {
+            location: {
+              latLng: { latitude: origin.lat, longitude: origin.lng },
+            },
+          },
+          destination: {
+            location: {
+              latLng: { latitude: destination.lat, longitude: destination.lng },
+            },
+          },
+          travelMode: "DRIVE",
+        }),
+      }
+    )
+
+    const data = await response.json()
+    console.log("Response Routes API:", data)
+    return data.routes?.[0] || null
+  }
+
+  const handleFindExit = async () => {
+    console.log(userLocation, polygons)
+    const exitPoint = getNearestExitPoint(userLocation, polygons)
+    if (exitPoint) {
+      console.log("Titik keluar terdekat:", exitPoint)
+
+      const route = await getRoute(userLocation, exitPoint)
+      if (route) {
+        const decodedPath = polyline
+          .decode(route.polyline.encodedPolyline)
+          .map(([lat, lng]) => ({
+            lat,
+            lng,
+          }))
+        setRoutePath(decodedPath)
+      }
+    } else {
+      console.error("Tidak ditemukan rute")
+    }
+  }
+
   useEffect(() => {
     if (!mapRef.current || !currentLayer?.file_url) return
-
-    fetchFileUrl(currentLayer.file_url)
 
     fetchFileUrl(currentLayer.file_url)
   }, [currentLayer, mapRef.current])
 
   useEffect(() => {
-    if (searchResult && mapRef.current) {
-      mapRef.current.panTo(searchResult)
-      mapRef.current.setZoom(15)
-      setUserLocation(null)
+    if (polygons.length > 0) {
+      handleFindExit()
     }
-  }, [searchResult])
+  }, [polygons])
+
+  // useEffect(() => {
+  //   if (searchResult && mapRef.current) {
+  //     mapRef.current.panTo(searchResult)
+  //     mapRef.current.setZoom(15)
+  //     setUserLocation(null)
+  //   }
+  // }, [searchResult])
 
   return (
     <div className="z-10">
@@ -237,6 +329,17 @@ function GoogleMaps({ currentLayer, searchResult }) {
             <Marker
               position={searchResult}
               title="Hasil Pencarian"
+            />
+          )}
+
+          {routePath.length > 0 && (
+            <Polyline
+              path={routePath}
+              options={{
+                strokeColor: "#0000FF",
+                strokeOpacity: 0.8,
+                strokeWeight: 5,
+              }}
             />
           )}
 
