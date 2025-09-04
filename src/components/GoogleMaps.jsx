@@ -23,22 +23,11 @@ function geoJsonToPolygons(geojson) {
   const polygons = []
 
   const handleFeature = (feature) => {
-    const label = feature.properties?.Label || "default"
-    const coords = feature.geometry.coordinates
-
-    if (feature.geometry.type === "Polygon") {
-      polygons.push({
-        label,
-        path: coords[0].map(([lng, lat]) => ({ lat, lng })),
-      })
-    } else if (feature.geometry.type === "MultiPolygon") {
-      coords.forEach((poly) => {
-        polygons.push({
-          label,
-          path: poly[0].map(([lng, lat]) => ({ lat, lng })),
-        })
-      })
-    }
+    polygons.push({
+      label: feature.properties?.Label || "default",
+      type: feature.geometry.type,
+      coordinates: feature.geometry.coordinates,
+    })
   }
 
   if (geojson.type === "FeatureCollection") {
@@ -56,6 +45,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [routePath, setRoutePath] = useState([])
   const [hospitals, setHospitals] = useState([])
   const mapRef = useRef(null)
+  const [waypoints, setWaypoints] = useState([]) // simpan titik2 pilihan user
 
   const fetchFileUrl = async (url) => {
     try {
@@ -143,9 +133,19 @@ function GoogleMaps({ currentLayer, searchResult }) {
     if (map) map.setZoom(map.getZoom() - 1)
   }
 
+  // const [userLocation, setUserLocation] = useState({
+  //   lat: 35.362346172693584,
+  //   lng: 140.38877195687414,
+  // })
+
+  // const [userLocation, setUserLocation] = useState({
+  //   lat: 35.24094604997625,
+  //   lng: 140.39223473954132,
+  // })
+
   const [userLocation, setUserLocation] = useState({
-    lat: 35.22659978407694,
-    lng: 140.3723534530334,
+    lat: 35.20307959805068,
+    lng: 140.3732847887497,
   })
 
   function getCurrentLocation() {
@@ -188,28 +188,36 @@ function GoogleMaps({ currentLayer, searchResult }) {
   function getNearestExitPoint(userLocation, safePolygons) {
     if (!userLocation || !safePolygons.length) return null
 
-    // Ambil semua polygon hijau (label "0")
+    // filter zone label = 0
     const greenPolys = safePolygons.filter((p) => p.label === "0")
     if (!greenPolys.length) return null
 
-    const point = turf.point([userLocation.lng, userLocation.lat])
+    const userPoint = turf.point([userLocation.lng, userLocation.lat])
+
     let nearestExit = null
     let minDistance = Infinity
 
     greenPolys.forEach((poly) => {
-      const line = turf.lineString(
-        poly.path.map((coord) => [coord.lng, coord.lat])
-      )
-      const candidate = turf.nearestPointOnLine(line, point)
-      const distance = turf.distance(point, candidate)
-
-      if (distance < minDistance) {
-        minDistance = distance
-        nearestExit = {
-          lat: candidate.geometry.coordinates[1],
-          lng: candidate.geometry.coordinates[0],
-        }
+      let geom
+      if (poly.type === "Polygon") {
+        geom = turf.polygon(poly.coordinates)
+      } else if (poly.type === "MultiPolygon") {
+        geom = turf.multiPolygon(poly.coordinates)
       }
+
+      // iterasi semua koordinat vertex dalam polygon
+      turf.coordEach(geom, (coord) => {
+        const candidate = turf.point(coord)
+        const distance = turf.distance(userPoint, candidate)
+
+        if (distance < minDistance) {
+          minDistance = distance
+          nearestExit = {
+            lat: coord[1],
+            lng: coord[0],
+          }
+        }
+      })
     })
 
     return nearestExit
@@ -246,23 +254,23 @@ function GoogleMaps({ currentLayer, searchResult }) {
     return data.routes?.[0] || null
   }
 
-  const handleFindExit = async () => {
-    const exitPoint = getNearestExitPoint(userLocation, polygons)
-    if (exitPoint) {
-      const route = await getRoute(userLocation, exitPoint)
-      if (route) {
-        const decodedPath = polyline
-          .decode(route.polyline.encodedPolyline)
-          .map(([lat, lng]) => ({
-            lat,
-            lng,
-          }))
-        setRoutePath(decodedPath)
-      }
-    } else {
-      console.error("Tidak ditemukan rute")
-    }
-  }
+  // const handleFindExit = async () => {
+  //   const exitPoint = getNearestExitPoint(userLocation, polygons)
+  //   if (exitPoint) {
+  //     const route = await getRoute(userLocation, exitPoint)
+  //     if (route) {
+  //       const decodedPath = polyline
+  //         .decode(route.polyline.encodedPolyline)
+  //         .map(([lat, lng]) => ({
+  //           lat,
+  //           lng,
+  //         }))
+  //       setRoutePath(decodedPath)
+  //     }
+  //   } else {
+  //     console.error("Tidak ditemukan rute")
+  //   }
+  // }
 
   async function fetchGeoJson(url) {
     try {
@@ -290,38 +298,42 @@ function GoogleMaps({ currentLayer, searchResult }) {
     fetchFileUrl(currentLayer.file_url)
   }, [currentLayer, mapRef.current])
 
-  useEffect(() => {
-    if (polygons.length > 0) {
-      handleFindExit()
-    }
-  }, [polygons])
+  // useEffect(() => {
+  //   if (polygons.length) {
+  //     handleFindExit()
+  //   }
+  // }, [polygons])
 
   useEffect(() => {
     async function loadData() {
       const hospitalsData = await fetchGeoJson(
-        "https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/layers/hospitals/hospitals.geojson"
+        "https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/layers/hospitals/map%20(4).geojson"
       )
 
       const hospitalWithZone = hospitalsData.map((h) => {
-        const point = turf.point([
+        const hospitalPoint = turf.point([
           h.geometry.coordinates[0],
           h.geometry.coordinates[1],
         ])
         let zoneLabel = null
 
         polygons.forEach((poly) => {
-          const polygon = turf.polygon([poly.path.map((c) => [c.lng, c.lat])])
-          if (turf.booleanPointInPolygon(point, polygon)) {
+          let geom
+          if (poly.type === "Polygon") {
+            geom = turf.polygon(poly.coordinates)
+          } else if (poly.type === "MultiPolygon") {
+            geom = turf.multiPolygon(poly.coordinates)
+          } else {
+            return
+          }
+
+          if (turf.booleanPointInPolygon(hospitalPoint, geom)) {
             zoneLabel = poly.label
           }
         })
 
-        console.log(zoneLabel)
-
         return { ...h, zoneLabel }
       })
-
-      console.log(hospitalWithZone)
 
       setHospitals(hospitalWithZone)
     }
@@ -331,13 +343,135 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }, [polygons])
 
-  // useEffect(() => {
-  //   if (searchResult && mapRef.current) {
-  //     mapRef.current.panTo(searchResult)
-  //     mapRef.current.setZoom(15)
-  //     setUserLocation(null)
-  //   }
-  // }, [searchResult])
+  async function planEvacuationRoute(userLoc, hospitals, polygons) {
+    let currentPoint = userLoc
+    const userPoint = turf.point([currentPoint.lng, currentPoint.lat])
+    let currentZone = null
+
+    polygons.forEach((poly) => {
+      let geom
+      if (poly.type === "Polygon") {
+        geom = turf.polygon(poly.coordinates)
+      } else if (poly.type === "MultiPolygon") {
+        geom = turf.multiPolygon(poly.coordinates)
+      }
+
+      if (turf.booleanPointInPolygon(userPoint, geom)) {
+        currentZone = poly.label
+      }
+    })
+
+    if (currentZone == null) return []
+
+    let routeSteps = []
+
+    while (currentZone >= 0) {
+      const candidates = hospitals.filter(
+        (h) => h.zoneLabel !== null && h.zoneLabel <= currentZone
+      )
+
+      if (!candidates.length) break
+
+      let nearest = null
+      let minDist = Infinity
+      candidates.forEach((h) => {
+        const d = turf.distance(
+          turf.point([currentPoint.lng, currentPoint.lat]),
+          turf.point([h.geometry.coordinates[0], h.geometry.coordinates[1]])
+        )
+        if (d < minDist) {
+          minDist = d
+          nearest = h
+        }
+      })
+
+      if (!nearest) break
+
+      routeSteps.push({
+        lng: nearest.geometry.coordinates[0],
+        lat: nearest.geometry.coordinates[1],
+      })
+
+      currentPoint = {
+        lng: nearest.geometry.coordinates[0],
+        lat: nearest.geometry.coordinates[1],
+      }
+      currentZone = nearest.zoneLabel - 1
+    }
+
+    setWaypoints(routeSteps)
+
+    setRoutePath(routeSteps)
+    return routeSteps
+  }
+
+  useEffect(() => {
+    planEvacuationRoute(userLocation, hospitals, polygons)
+  }, [hospitals, polygons, currentLayer, mapRef.current])
+
+  useEffect(() => {
+    async function getRouteWithWaypoints(origin, waypoints) {
+      console.log(waypoints)
+      const body = {
+        origin: {
+          location: {
+            latLng: { latitude: origin.lat, longitude: origin.lng },
+          },
+        },
+        destination: {
+          location: {
+            latLng: {
+              latitude: waypoints[waypoints.length - 1].lat,
+              longitude: waypoints[waypoints.length - 1].lng,
+            },
+          },
+        },
+        intermediates: waypoints.slice(0, -1).map((w) => ({
+          location: {
+            latLng: { latitude: w.lat, longitude: w.lng },
+          },
+        })),
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_AWARE_OPTIMAL", // 🚨 tambahin ini biar pake rute jalan beneran
+      }
+
+      const response = await fetch(
+        "https://routes.googleapis.com/directions/v2:computeRoutes",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+            "X-Goog-FieldMask":
+              "routes.polyline.encodedPolyline,routes.legs.steps.polyline.encodedPolyline",
+          },
+          body: JSON.stringify(body),
+        }
+      )
+
+      const data = await response.json()
+      const output = data.routes?.[0] || null
+
+      if (output) {
+        let fullPath = []
+        output.legs.forEach((leg) => {
+          leg.steps.forEach((step) => {
+            const stepPath = polyline
+              .decode(step.polyline.encodedPolyline)
+              .map(([lat, lng]) => ({ lat, lng }))
+            fullPath = fullPath.concat(stepPath)
+          })
+        })
+        setRoutePath(fullPath)
+      }
+
+      // return
+    }
+
+    if (routePath.length) {
+      getRouteWithWaypoints(userLocation, waypoints)
+    }
+  }, [waypoints, userLocation])
 
   return (
     <div className="z-10">
@@ -355,7 +489,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
           }}
           onLoad={onLoad}
         >
-          {polygons.map((poly, i) => (
+          {/* {polygons.map((poly, i) => (
             <Polygon
               key={i}
               paths={poly.path}
@@ -366,18 +500,51 @@ function GoogleMaps({ currentLayer, searchResult }) {
                 strokeWeight: 1,
               }}
             />
-          ))}
+          ))} */}
 
-          {/* {hospitals.map((f, i) => {
+          {polygons.map((poly, i) => {
+            if (poly.type === "Polygon") {
+              return (
+                <Polygon
+                  key={i}
+                  paths={poly.coordinates[0].map(([lng, lat]) => ({
+                    lat,
+                    lng,
+                  }))}
+                  options={{
+                    fillColor: getFillColor(poly.label),
+                    strokeWeight: 1,
+                    strokeColor: "#F0F0F0",
+                    fillOpacity: 0.6,
+                  }}
+                />
+              )
+            } else if (poly.type === "MultiPolygon") {
+              return poly.coordinates.map((coords, j) => (
+                <Polygon
+                  key={`${i}-${j}`}
+                  paths={coords[0].map(([lng, lat]) => ({ lat, lng }))}
+                  options={{
+                    fillColor: getFillColor(poly.label),
+                    strokeWeight: 1,
+                    strokeColor: "#F0F0F0",
+                    fillOpacity: 0.6,
+                  }}
+                />
+              ))
+            }
+          })}
+
+          {hospitals.map((f, i) => {
             const [lng, lat] = f.geometry.coordinates
             return (
               <Marker
                 key={i}
                 position={{ lat, lng }}
-                title={f.properties?.name || "Rumah Sakit"}
+                title={f.properties?.name || "Hospital"}
               />
             )
-          })} */}
+          })}
 
           {userLocation && (
             <Marker

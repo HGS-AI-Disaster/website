@@ -59,7 +59,6 @@ function Map() {
         searchResult={searchResult}
         currentLayer={currentLayer}
       />
-
       <Navigation
         setSearchResult={setSearchResult}
         layers={layers}
