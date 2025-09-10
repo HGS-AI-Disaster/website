@@ -78,6 +78,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [clusteredMarkers, setClusteredMarkers] = useState([])
   const [dialogIsOpen, setDialogIsOpen] = useState(false)
   const [selectedShelter, setSelectedShelter] = useState()
+  const [mapReady, setMapReady] = useState(false)
+
+  const handleIdle = () => {
+    setMapReady(true)
+  }
 
   const fetchFileUrl = async (url) => {
     try {
@@ -358,8 +363,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
       setShelters(shelterWithZone)
     }
 
-    if (polygons.length) {
-      loadData()
+    if (mapReady && polygons.length) {
+      toast.promise(loadData(), {
+        loading: "Loading...",
+      })
     }
   }, [polygons])
 
@@ -501,8 +508,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
         })
         setRoutePath(fullPath)
       }
-
-      // return
     }
 
     if (waypoints.length) {
@@ -517,79 +522,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       {loading ? (
         <div>Loading Layer...</div>
       ) : (
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={center}
-          zoom={12}
-          options={{
-            disableDefaultUI: true,
-            gestureHandling: "greedy",
-            mapTypeId: "hybrid",
-          }}
-          onLoad={onLoad}
-        >
-          {routePath.length > 0 && (
-            <Polyline
-              path={routePath}
-              options={{
-                strokeColor: "#0000FF",
-                strokeOpacity: 0.8,
-                strokeWeight: 5,
-              }}
-              className="z-[999]"
-            />
-          )}
-
-          {polygons.map((poly, i) => {
-            if (poly.type === "Polygon") {
-              return (
-                <Polygon
-                  key={i}
-                  paths={poly.coordinates[0].map(([lng, lat]) => ({
-                    lat,
-                    lng,
-                  }))}
-                  options={{
-                    fillColor: getFillColor(poly.label),
-                    strokeWeight: 1,
-                    strokeColor: "#F0F0F0",
-                    fillOpacity: 0.6,
-                  }}
-                />
-              )
-            } else if (poly.type === "MultiPolygon") {
-              return poly.coordinates.map((coords, j) => (
-                <Polygon
-                  key={`${i}-${j}`}
-                  paths={coords[0].map(([lng, lat]) => ({ lat, lng }))}
-                  options={{
-                    fillColor: getFillColor(poly.label),
-                    strokeWeight: 1,
-                    strokeColor: "#F0F0F0",
-                    fillOpacity: 0.6,
-                  }}
-                />
-              ))
-            }
-          })}
-
-          {/* 1. Marker khusus yang ada di waypoints */}
-          {waypointMarkers.map((f, i) => {
-            const [lng, lat] = f.geometry.coordinates
-
-            return (
-              <Marker
-                key={`waypoint-${i}`}
-                position={{ lat, lng }}
-                title={f.properties?.name || "Evacuation Shelter"}
-                onClick={() => {
-                  setSelectedShelter(f)
-                  setDialogIsOpen(true)
-                }}
-              />
-            )
-          })}
-
+        <>
           <Dialog
             open={dialogIsOpen}
             onOpenChange={setDialogIsOpen}
@@ -612,7 +545,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     </div>
                   </div>
                 </DialogTitle>
-
                 <div className="flex flex-col w-full items-center mt-4">
                   <div className="text-sm mb-2">Building Type</div>
                   <div className="flex gap-2">
@@ -647,15 +579,90 @@ function GoogleMaps({ currentLayer, searchResult }) {
               </DialogHeader>
             </DialogContent>
           </Dialog>
-
-          {/* 2. Cluster untuk marker lain */}
-          <MarkerClusterer
+          <GoogleMap
+            mapContainerStyle={containerStyle}
+            center={center}
+            zoom={12}
             options={{
-              styles: [
-                {
-                  url:
-                    "data:image/svg+xml;charset=UTF-8," +
-                    encodeURIComponent(`
+              disableDefaultUI: true,
+              gestureHandling: "greedy",
+              mapTypeId: "hybrid",
+            }}
+            onLoad={onLoad}
+            onIdle={handleIdle}
+          >
+            {mapReady && (
+              <>
+                {routePath.length > 0 && (
+                  <Polyline
+                    path={routePath}
+                    options={{
+                      strokeColor: "#0000FF",
+                      strokeOpacity: 0.8,
+                      strokeWeight: 5,
+                      zIndex: 9999,
+                    }}
+                  />
+                )}
+
+                {polygons.map((poly, i) => {
+                  if (poly.type === "Polygon") {
+                    return (
+                      <Polygon
+                        key={i}
+                        paths={poly.coordinates[0].map(([lng, lat]) => ({
+                          lat,
+                          lng,
+                        }))}
+                        options={{
+                          fillColor: getFillColor(poly.label),
+                          strokeWeight: 1,
+                          strokeColor: "#F0F0F0",
+                          fillOpacity: 0.6,
+                        }}
+                      />
+                    )
+                  } else if (poly.type === "MultiPolygon") {
+                    return poly.coordinates.map((coords, j) => (
+                      <Polygon
+                        key={`${i}-${j}`}
+                        paths={coords[0].map(([lng, lat]) => ({ lat, lng }))}
+                        options={{
+                          fillColor: getFillColor(poly.label),
+                          strokeWeight: 1,
+                          strokeColor: "#F0F0F0",
+                          fillOpacity: 0.6,
+                        }}
+                      />
+                    ))
+                  }
+                })}
+
+                {/* 1. Marker khusus yang ada di waypoints */}
+                {waypointMarkers.map((f, i) => {
+                  const [lng, lat] = f.geometry.coordinates
+
+                  return (
+                    <Marker
+                      key={`waypoint-${i}`}
+                      position={{ lat, lng }}
+                      title={f.properties?.name || "Evacuation Shelter"}
+                      onClick={() => {
+                        setSelectedShelter(f)
+                        setDialogIsOpen(true)
+                      }}
+                    />
+                  )
+                })}
+
+                {/* 2. Cluster untuk marker lain */}
+                <MarkerClusterer
+                  options={{
+                    styles: [
+                      {
+                        url:
+                          "data:image/svg+xml;charset=UTF-8," +
+                          encodeURIComponent(`
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
               <defs>
                 <radialGradient id="inner-glow" cx="50%" cy="50%" r="50%">
@@ -667,104 +674,111 @@ function GoogleMaps({ currentLayer, searchResult }) {
               // <circle cx="20" cy="20" r="19" fill="url(#inner-glow)" />
             </svg>
           `),
-                  height: 30,
-                  width: 30,
-                  textColor: "#FFFFFF",
-                  textSize: 10,
-                  fontFamily: "Arial, sans-serif",
-                  fontWeight: "300", // light
-                },
-              ],
-              gridSize: 150,
-              minimumClusterSize: 2,
-            }}
-          >
-            {(clusterer) =>
-              clusteredMarkers.map((f, i) => {
-                const [lng, lat] = f.geometry.coordinates
-                return (
+                        height: 40,
+                        width: 40,
+                        textColor: "#FFFFFF",
+                        textSize: 10,
+                        fontFamily: "Arial, sans-serif",
+                        fontWeight: "300", // light
+                      },
+                    ],
+                    gridSize: 150,
+                    minimumClusterSize: 4,
+                  }}
+                >
+                  {(clusterer) =>
+                    clusteredMarkers.map((f, i) => {
+                      const [lng, lat] = f.geometry.coordinates
+                      return (
+                        <Marker
+                          key={`cluster-${i}`}
+                          clusterer={clusterer}
+                          position={{ lat, lng }}
+                          icon={{
+                            url: `https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/clinic_4970758.png`,
+                            scaledSize: new window.google.maps.Size(32, 32), // ubah ukuran sesuai kebutuhan
+                            // optional: atur anchor biar pas titiknya di tengah bawah
+                            anchor: new window.google.maps.Point(16, 32),
+                          }}
+                          title={
+                            `${f.properties?.name} (click to see details)` ||
+                            "Evacuation Shelter (click to see details)"
+                          }
+                          onClick={() => {
+                            setSelectedShelter(f)
+                            setDialogIsOpen(true)
+                          }}
+                        />
+                      )
+                    })
+                  }
+                </MarkerClusterer>
+
+                {userLocation && (
+                  // <Marker
+                  //   position={userLocation}
+                  //   title="Lokasi Anda Sekarang"
+                  //   icon={{
+                  //     url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                  //   }}
+                  //   />
+
+                  <OverlayView
+                    position={userLocation}
+                    mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                  >
+                    <HoverCard openDelay={0}>
+                      <HoverCardTrigger>
+                        <div className="h-4 w-4 border-2 rounded-full bg-red-500 border-white"></div>
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        className={"w-fit py-1 px-2 text-center"}
+                      >
+                        You are here
+                      </HoverCardContent>
+                    </HoverCard>
+                  </OverlayView>
+                )}
+
+                {searchResult && (
                   <Marker
-                    key={`cluster-${i}`}
-                    clusterer={clusterer}
-                    position={{ lat, lng }}
-                    icon={{
-                      url: `data:image/svg+xml;utf-8,
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dot-icon lucide-dot"><circle cx="12.1" cy="12.1" r="1"/></svg>`,
-                    }}
-                    title={
-                      `${f.properties?.name} (click to see details)` ||
-                      "Evacuation Shelter (click to see details)"
-                    }
-                    onClick={() => {
-                      setSelectedShelter(f)
-                      setDialogIsOpen(true)
-                    }}
+                    position={searchResult}
+                    title="Hasil Pencarian"
                   />
-                )
-              })
-            }
-          </MarkerClusterer>
+                )}
+              </>
+            )}
 
-          {userLocation && (
-            // <Marker
-            //   position={userLocation}
-            //   title="Lokasi Anda Sekarang"
-            //   icon={{
-            //     url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-            //   }}
-            //   />
-
-            <OverlayView
-              position={userLocation}
-              mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
-            >
-              <HoverCard openDelay={0}>
-                <HoverCardTrigger>
-                  <div className="h-4 w-4 border-2 rounded-full bg-red-500 border-white"></div>
-                </HoverCardTrigger>
-                <HoverCardContent className={"w-fit py-1 px-2 text-center"}>
-                  You are here
-                </HoverCardContent>
-              </HoverCard>
-            </OverlayView>
-          )}
-
-          {searchResult && (
-            <Marker
-              position={searchResult}
-              title="Hasil Pencarian"
-            />
-          )}
-
-          {/* Kontrol zoom & lokasi */}
-          <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
-            <Button
-              onClick={handleZoomIn}
-              className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
-            >
-              <ZoomIn />
-            </Button>
-            <Button
-              onClick={handleZoomOut}
-              className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
-            >
-              <ZoomOut />
-            </Button>
-            <Button
-              className="w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
-              onClick={getCurrentLocation}
-            >
-              <LocateFixed />
-            </Button>
-            <Button className="cursor-pointer bg-gray-50 hover:bg-gray-200 h-[45px] w-[50px]">
-              <Navigation2
-                fill="black"
-                stroke="black"
-                className="size-[25px]"
-              />
-            </Button>
-          </div>
-        </GoogleMap>
+            {/* Kontrol zoom & lokasi */}
+            <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
+              <Button
+                onClick={handleZoomIn}
+                className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
+              >
+                <ZoomIn />
+              </Button>
+              <Button
+                onClick={handleZoomOut}
+                className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
+              >
+                <ZoomOut />
+              </Button>
+              <Button
+                className="w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
+                onClick={getCurrentLocation}
+              >
+                <LocateFixed />
+              </Button>
+              <Button className="cursor-pointer bg-gray-50 hover:bg-gray-200 h-[45px] w-[50px]">
+                <Navigation2
+                  fill="black"
+                  stroke="black"
+                  className="size-[25px]"
+                />
+              </Button>
+            </div>
+          </GoogleMap>
+        </>
       )}
     </div>
   )
