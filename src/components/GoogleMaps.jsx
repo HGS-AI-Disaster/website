@@ -5,6 +5,7 @@ import {
   Polyline,
   OverlayView,
 } from "@react-google-maps/api"
+import Supercluster from "supercluster"
 import CustomZoom from "./CustomZoom"
 import {
   Dialog,
@@ -80,9 +81,27 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [selectedShelter, setSelectedShelter] = useState()
   const [mapReady, setMapReady] = useState(false)
   const [visibleMarkers, setVisibleMarkers] = useState([])
+  const [clusters, setClusters] = useState([])
+  const [supercluster, setSupercluster] = useState(null)
 
   const handleIdle = () => {
     setMapReady(true)
+    if (supercluster && mapRef.current) {
+      const map = mapRef.current
+      const bounds = map.getBounds()
+      if (!bounds) return
+
+      const zoom = map.getZoom()
+      const bbox = [
+        bounds.getSouthWest().lng(),
+        bounds.getSouthWest().lat(),
+        bounds.getNorthEast().lng(),
+        bounds.getNorthEast().lat(),
+      ]
+
+      const clusters = supercluster.getClusters(bbox, zoom)
+      setClusters(clusters)
+    }
   }
 
   const fetchFileUrl = async (url) => {
@@ -347,7 +366,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
         const cacheKey = `shelters_${currentLayer.id}`
         const cached = localStorage.getItem(cacheKey)
         if (cached) {
-          console.log("👉 Load dari cache")
+          console.log("Load dari cache")
           console.log(localStorage)
           const parsed = JSON.parse(cached)
           setShelters(parsed) // tetap update state React
@@ -374,8 +393,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     if (mapReady && currentLayer?.processed_url) {
       toast.promise(loadProcessedShelters(), {
-        loading: "Loading processed shelters...",
-        success: "Shelters loaded",
+        loading: "Loading shelters...",
         error: "Failed to load shelters",
       })
     }
@@ -528,6 +546,56 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }, [waypoints, userLocation])
 
+  useEffect(() => {
+    if (!shelters.length) return
+
+    // Buat index supercluster
+    const index = new Supercluster({
+      radius: 300, // pixel radius cluster
+      maxZoom: 20,
+      minPoints: 5,
+    })
+
+    // Format ulang shelter ke GeoJSON Point
+    const points = shelters.map((f) => ({
+      type: "Feature",
+      properties: {
+        cluster: false,
+        shelterId: f.properties?.id,
+        name: f.properties?.name,
+        address: f.properties?.address,
+        facilityType: f.properties?.facilityType,
+        seatingCapacity: f.properties?.seatingCapacity,
+      },
+      geometry: {
+        type: "Point",
+        coordinates: f.geometry.coordinates, // [lng, lat]
+      },
+    }))
+
+    index.load(points)
+    setSupercluster(index)
+  }, [shelters])
+
+  useEffect(() => {
+    if (!mapRef.current || !supercluster) return
+
+    const map = mapRef.current
+    const bounds = map.getBounds()
+    if (!bounds) return
+
+    const zoom = map.getZoom()
+    const bbox = [
+      bounds.getSouthWest().lng(),
+      bounds.getSouthWest().lat(),
+      bounds.getNorthEast().lng(),
+      bounds.getNorthEast().lat(),
+    ]
+
+    const clusters = supercluster.getClusters(bbox, zoom)
+    setClusters(clusters)
+  }, [supercluster, mapReady])
+
   return (
     <div className="z-10">
       {loading ? (
@@ -667,7 +735,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                 })}
 
                 {/* 2. Cluster untuk marker lain */}
-                <MarkerClusterer
+                {/* <MarkerClusterer
                   options={{
                     styles: [
                       {
@@ -723,7 +791,66 @@ function GoogleMaps({ currentLayer, searchResult }) {
                       )
                     })
                   }
-                </MarkerClusterer>
+                </MarkerClusterer> */}
+                {clusters.map((cluster, i) => {
+                  const [lng, lat] = cluster.geometry.coordinates
+                  const { cluster: isCluster, point_count: pointCount } =
+                    cluster.properties
+
+                  if (isCluster) {
+                    // render cluster bubble
+                    return (
+                      <OverlayView
+                        key={`cluster-${i}`}
+                        position={{ lat, lng }}
+                        mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "50%",
+                            background:
+                              "radial-gradient(circle at center, rgba(0, 0, 255, 0.8), rgba(0, 0, 255, 0.6), rgba(255, 255, 255, 0.5))", // biru utama
+                            color: "white",
+
+                            fontSize: "10px",
+                            width: 34,
+                            height: 34,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {pointCount}
+                        </div>
+                      </OverlayView>
+                    )
+                  }
+
+                  // render single marker
+                  return (
+                    <Marker
+                      key={`shelter-${i}`}
+                      position={{ lat, lng }}
+                      icon={{
+                        url: `https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/clinic_4970758.png`,
+                        scaledSize: new window.google.maps.Size(32, 32),
+                        anchor: new window.google.maps.Point(16, 32),
+                      }}
+                      title={
+                        `${cluster.properties.name} (Click to see details)` ||
+                        "Evacuation Shelter (Click to see details)"
+                      }
+                      onClick={() => {
+                        setSelectedShelter({
+                          properties: cluster.properties,
+                          geometry: cluster.geometry,
+                        })
+                        setDialogIsOpen(true)
+                      }}
+                    />
+                  )
+                })}
 
                 {userLocation && (
                   // <Marker
