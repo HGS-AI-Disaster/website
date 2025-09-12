@@ -45,6 +45,7 @@ import EditVisibility from "./EditVisibility"
 import DeleteLayer from "./DeleteLayer"
 import { getLayers } from "@/supabase/actions/layer"
 import { toast } from "sonner"
+import { useSelector } from "react-redux"
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
@@ -176,15 +177,14 @@ export const columns = [
 ]
 
 function LayerManagement() {
-  const [rawData, setRawData] = useState([])
-  const [data, setData] = useState([])
+  const { data: layersData, status } = useSelector((state) => state.layers)
   const [sorting, setSorting] = useState([])
   const [columnFilters, setColumnFilters] = useState([])
   const [columnVisibility, setColumnVisibility] = useState({})
   const [rowSelection, setRowSelection] = useState({})
 
   const table = useReactTable({
-    data,
+    data: layersData,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -201,26 +201,29 @@ function LayerManagement() {
       rowSelection,
     },
   })
-  const [loading, setLoading] = useState(true)
 
   const getUniqueValues = (raw, key) => {
     return [...new Set(raw.map((item) => item[key]))]
   }
 
-  const fetchData = async () => {
-    try {
-      const data = await getLayers()
-      setData(data)
-      setRawData(data)
-    } catch (error) {
-      toast.error(error)
-    }
-    setLoading(false)
-  }
+  // const fetchData = async () => {
+  //   try {
+  //     const data = await getLayers()
+  //     setData(data)
+  //     setRawData(data)
+  //   } catch (error) {
+  //     toast.error(error)
+  //   }
+  //   setLoading(false)
+  // }
 
-  useEffect(() => {
-    fetchData()
-  }, [])
+  // useEffect(() => {
+  //   fetchData()
+
+  //   if (layersData.length) {
+
+  //   }
+  // }, [layersData])
 
   return (
     <div className="bg-gray-200 p-12">
@@ -242,6 +245,7 @@ function LayerManagement() {
             <Menubar>
               <MenubarMenu>
                 <MenubarTrigger>Filter</MenubarTrigger>
+
                 <MenubarContent>
                   <MenubarItem onClick={() => table.setColumnFilters([])}>
                     View All
@@ -258,7 +262,7 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(rawData, "layer").map((value) => (
+                      {getUniqueValues(layersData, "layer").map((value) => (
                         <MenubarItem
                           key={value}
                           onClick={() => {
@@ -282,7 +286,7 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(rawData, "category").map((value) => (
+                      {getUniqueValues(layersData, "category").map((value) => (
                         <MenubarItem
                           key={value}
                           onClick={() => {
@@ -306,17 +310,21 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(rawData, "layer_date").map((value) => (
-                        <MenubarItem
-                          key={value}
-                          onClick={() => {
-                            table.setColumnFilters([])
-                            table.getColumn("layer_date")?.setFilterValue(value)
-                          }}
-                        >
-                          {value}
-                        </MenubarItem>
-                      ))}
+                      {getUniqueValues(layersData, "layer_date").map(
+                        (value) => (
+                          <MenubarItem
+                            key={value}
+                            onClick={() => {
+                              table.setColumnFilters([])
+                              table
+                                .getColumn("layer_date")
+                                ?.setFilterValue(value)
+                            }}
+                          >
+                            {value}
+                          </MenubarItem>
+                        )
+                      )}
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
@@ -326,20 +334,24 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(rawData, "created_at").map((value) => (
-                        <MenubarItem
-                          key={value}
-                          onClick={() => {
-                            table.setColumnFilters([])
-                            table.getColumn("created_at")?.setFilterValue(value)
-                          }}
-                        >
-                          {value.slice(0, 10)}
-                          <span className="text-xs text-gray-500">
-                            at {value.slice(11, 16)}
-                          </span>
-                        </MenubarItem>
-                      ))}
+                      {getUniqueValues(layersData, "created_at").map(
+                        (value) => (
+                          <MenubarItem
+                            key={value}
+                            onClick={() => {
+                              table.setColumnFilters([])
+                              table
+                                .getColumn("created_at")
+                                ?.setFilterValue(value)
+                            }}
+                          >
+                            {value.slice(0, 10)}
+                            <span className="text-xs text-gray-500">
+                              at {value.slice(11, 16)}
+                            </span>
+                          </MenubarItem>
+                        )
+                      )}
                     </MenubarSubContent>
                   </MenubarSub>
                   <MenubarSub>
@@ -353,7 +365,7 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(rawData, "source").map((value) => (
+                      {getUniqueValues(layersData, "source").map((value) => (
                         <MenubarItem
                           key={value}
                           onClick={() => {
@@ -373,17 +385,22 @@ function LayerManagement() {
                         View all
                       </MenubarItem>
                       <MenubarSeparator />
-                      {getUniqueValues(rawData, "visibility").map((value) => (
-                        <MenubarItem
-                          key={value}
-                          onClick={() => {
-                            table.setColumnFilters([])
-                            table.getColumn("visibility")?.setFilterValue(value)
-                          }}
-                        >
-                          {value}
-                        </MenubarItem>
-                      ))}
+                      {layersData?.length &&
+                        getUniqueValues(layersData, "visibility").map(
+                          (value) => (
+                            <MenubarItem
+                              key={value}
+                              onClick={() => {
+                                table.setColumnFilters([])
+                                table
+                                  .getColumn("visibility")
+                                  ?.setFilterValue(value)
+                              }}
+                            >
+                              {value}
+                            </MenubarItem>
+                          )
+                        )}
                     </MenubarSubContent>
                   </MenubarSub>
                 </MenubarContent>
@@ -432,16 +449,16 @@ function LayerManagement() {
                   ))
                 ) : (
                   <TableRow>
-                    {loading ? (
+                    {status === "loading" ? (
                       <TableCell
-                        colSpan={columns.length}
+                        colSpan={columns?.length}
                         className="h-24 text-center"
                       >
                         Loading...
                       </TableCell>
                     ) : (
                       <TableCell
-                        colSpan={columns.length}
+                        colSpan={columns?.length}
                         className="h-24 text-center"
                       >
                         No results.

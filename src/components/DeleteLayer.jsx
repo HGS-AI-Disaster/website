@@ -21,11 +21,6 @@ function DeleteLayer({ layer }) {
     toast.promise(deleteLayer(id), {
       loading: "Deleting layer...",
       success: () => ({
-        description: "Refresh the page to view the changes",
-        action: {
-          label: "Refresh",
-          onClick: () => window.location.reload(),
-        },
         message: "Layer has been deleted",
         duration: 15000,
       }),

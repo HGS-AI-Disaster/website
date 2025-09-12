@@ -57,11 +57,14 @@ function Navigation({
   }
 
   useEffect(() => {
-    if (layers.length && !currentDate) {
+    if (layers.length) {
       setCurrentDate(layers[0].layer_date)
-      setCurrentLayer(layers[0])
     }
-  }, [layers, currentDate, setCurrentLayer])
+  }, [layers])
+
+  useEffect(() => {
+    setCurrentLayer(layers[0])
+  }, [])
 
   return (
     <div className="navigations h-full flex flex-col">
@@ -140,7 +143,7 @@ function Navigation({
                         >
                           <div className="text px-2 py-2 hover:bg-gray-100 flex gap-3 items-center">
                             <div className="flex-1 truncate">{layer.layer}</div>
-                            {currentLayer.layer === layer.layer && (
+                            {currentLayer?.layer === layer.layer && (
                               <Badge
                                 variant={"secondary"}
                                 className={

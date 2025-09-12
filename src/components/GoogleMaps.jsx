@@ -79,6 +79,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [dialogIsOpen, setDialogIsOpen] = useState(false)
   const [selectedShelter, setSelectedShelter] = useState()
   const [mapReady, setMapReady] = useState(false)
+  const [visibleMarkers, setVisibleMarkers] = useState([])
 
   const handleIdle = () => {
     setMapReady(true)
@@ -212,74 +213,74 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
-  function getNearestExitPoint(userLocation, safePolygons) {
-    if (!userLocation || !safePolygons.length) return null
+  // function getNearestExitPoint(userLocation, safePolygons) {
+  //   if (!userLocation || !safePolygons.length) return null
 
-    // filter zone label = 0
-    const greenPolys = safePolygons.filter((p) => p.label === "0")
-    if (!greenPolys.length) return null
+  //   // filter zone label = 0
+  //   const greenPolys = safePolygons.filter((p) => p.label === "0")
+  //   if (!greenPolys.length) return null
 
-    const userPoint = turf.point([userLocation.lng, userLocation.lat])
+  //   const userPoint = turf.point([userLocation.lng, userLocation.lat])
 
-    let nearestExit = null
-    let minDistance = Infinity
+  //   let nearestExit = null
+  //   let minDistance = Infinity
 
-    greenPolys.forEach((poly) => {
-      let geom
-      if (poly.type === "Polygon") {
-        geom = turf.polygon(poly.coordinates)
-      } else if (poly.type === "MultiPolygon") {
-        geom = turf.multiPolygon(poly.coordinates)
-      }
+  //   greenPolys.forEach((poly) => {
+  //     let geom
+  //     if (poly.type === "Polygon") {
+  //       geom = turf.polygon(poly.coordinates)
+  //     } else if (poly.type === "MultiPolygon") {
+  //       geom = turf.multiPolygon(poly.coordinates)
+  //     }
 
-      // iterasi semua koordinat vertex dalam polygon
-      turf.coordEach(geom, (coord) => {
-        const candidate = turf.point(coord)
-        const distance = turf.distance(userPoint, candidate)
+  //     // iterasi semua koordinat vertex dalam polygon
+  //     turf.coordEach(geom, (coord) => {
+  //       const candidate = turf.point(coord)
+  //       const distance = turf.distance(userPoint, candidate)
 
-        if (distance < minDistance) {
-          minDistance = distance
-          nearestExit = {
-            lat: coord[1],
-            lng: coord[0],
-          }
-        }
-      })
-    })
+  //       if (distance < minDistance) {
+  //         minDistance = distance
+  //         nearestExit = {
+  //           lat: coord[1],
+  //           lng: coord[0],
+  //         }
+  //       }
+  //     })
+  //   })
 
-    return nearestExit
-  }
+  //   return nearestExit
+  // }
 
-  async function getRoute(origin, destination) {
-    const response = await fetch(
-      "https://routes.googleapis.com/directions/v2:computeRoutes",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-          "X-Goog-FieldMask":
-            "routes.polyline.encodedPolyline,routes.duration,routes.distanceMeters",
-        },
-        body: JSON.stringify({
-          origin: {
-            location: {
-              latLng: { latitude: origin.lat, longitude: origin.lng },
-            },
-          },
-          destination: {
-            location: {
-              latLng: { latitude: destination.lat, longitude: destination.lng },
-            },
-          },
-          travelMode: "DRIVE",
-        }),
-      }
-    )
+  // async function getRoute(origin, destination) {
+  //   const response = await fetch(
+  //     "https://routes.googleapis.com/directions/v2:computeRoutes",
+  //     {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+  //         "X-Goog-FieldMask":
+  //           "routes.polyline.encodedPolyline,routes.duration,routes.distanceMeters",
+  //       },
+  //       body: JSON.stringify({
+  //         origin: {
+  //           location: {
+  //             latLng: { latitude: origin.lat, longitude: origin.lng },
+  //           },
+  //         },
+  //         destination: {
+  //           location: {
+  //             latLng: { latitude: destination.lat, longitude: destination.lng },
+  //           },
+  //         },
+  //         travelMode: "DRIVE",
+  //       }),
+  //     }
+  //   )
 
-    const data = await response.json()
-    return data.routes?.[0] || null
-  }
+  //   const data = await response.json()
+  //   return data.routes?.[0] || null
+  // }
 
   // const handleFindExit = async () => {
   //   const exitPoint = getNearestExitPoint(userLocation, polygons)
@@ -320,10 +321,17 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
+    console.log(currentLayer)
+  }, [currentLayer])
+
+  useEffect(() => {
     if (!mapRef.current || !currentLayer?.file_url) return
 
-    fetchFileUrl(currentLayer.file_url)
-  }, [currentLayer, mapRef.current])
+    const controller = new AbortController()
+    fetchFileUrl(currentLayer.file_url, controller.signal)
+
+    return () => controller.abort()
+  }, [currentLayer])
 
   // useEffect(() => {
   //   if (polygons.length) {
@@ -332,43 +340,46 @@ function GoogleMaps({ currentLayer, searchResult }) {
   // }, [polygons])
 
   useEffect(() => {
-    async function loadData() {
-      const sheltersData = await fetchGeoJson(import.meta.env.VITE_SHELTERS_URL)
+    async function loadProcessedShelters() {
+      if (!currentLayer?.processed_url) return
 
-      const shelterWithZone = sheltersData.map((h) => {
-        const shelterPoint = turf.point([
-          h.geometry.coordinates[0],
-          h.geometry.coordinates[1],
-        ])
-        let zoneLabel = null
+      try {
+        const cacheKey = `shelters_${currentLayer.id}`
+        const cached = localStorage.getItem(cacheKey)
+        if (cached) {
+          console.log("👉 Load dari cache")
+          console.log(localStorage)
+          const parsed = JSON.parse(cached)
+          setShelters(parsed) // tetap update state React
+          return
+        }
 
-        polygons.forEach((poly) => {
-          let geom
-          if (poly.type === "Polygon") {
-            geom = turf.polygon(poly.coordinates)
-          } else if (poly.type === "MultiPolygon") {
-            geom = turf.multiPolygon(poly.coordinates)
-          } else {
-            return
-          }
+        const res = await fetch(currentLayer.processed_url)
 
-          if (turf.booleanPointInPolygon(shelterPoint, geom)) {
-            zoneLabel = poly.label
-          }
-        })
+        const data = await res.json()
 
-        return { ...h, zoneLabel }
-      })
-
-      setShelters(shelterWithZone)
+        if (data.type === "FeatureCollection") {
+          // console.log(data)
+          localStorage.setItem(cacheKey, JSON.stringify(data.features))
+          setShelters(data.features) // langsung isi shelter hasil Edge Function
+          return
+        } else {
+          console.error("Processed GeoJSON tidak valid:", data)
+          return
+        }
+      } catch (err) {
+        console.error("Gagal fetch processed shelters:", err)
+      }
     }
 
-    if (mapReady && polygons.length) {
-      toast.promise(loadData(), {
-        loading: "Loading...",
+    if (mapReady && currentLayer?.processed_url) {
+      toast.promise(loadProcessedShelters(), {
+        loading: "Loading processed shelters...",
+        success: "Shelters loaded",
+        error: "Failed to load shelters",
       })
     }
-  }, [polygons])
+  }, [mapReady, currentLayer?.processed_url])
 
   async function planEvacuationRoute(userLoc, shelters, polygons) {
     let currentPoint = userLoc

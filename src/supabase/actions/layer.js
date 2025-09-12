@@ -66,6 +66,23 @@ export const addLayer = async (data) => {
     .select("*")
     .single()
 
+  if (addLayerData) {
+    await fetch(
+      `${import.meta.env.VITE_SUPABASE_PRECOMPUTE_URL}/precompute-shelters`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_KEY}`,
+        },
+        body: JSON.stringify({
+          layerId: addLayerData.id, // ID dari tabel layers setelah insert
+          fileUrl: addLayerData.file_url,
+        }),
+      }
+    )
+  }
+
   if (addLayerError) throw addLayerError
 
   return addLayerData

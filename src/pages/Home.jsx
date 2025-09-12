@@ -5,6 +5,12 @@ import { supabase } from "@/supabase"
 import React, { useEffect } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { setProfile, setToken, setUser } from "../../redux/reducers/auth"
+import {
+  fetchLayers,
+  addLayer,
+  updateLayer,
+  deleteLayer,
+} from "../../redux/reducers/layers"
 import { toast } from "sonner"
 
 function Home() {
@@ -55,6 +61,33 @@ function Home() {
       }
 
       sessionStorage.removeItem("auth")
+    }
+  }, [])
+
+  useEffect(() => {
+    dispatch(fetchLayers())
+    const channel = supabase
+      .channel("layers-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "layers" },
+        (payload) => {
+          console.log("Realtime event:", payload)
+          if (payload.eventType === "INSERT") {
+            dispatch(addLayer(payload.new))
+          } else if (payload.eventType === "UPDATE") {
+            dispatch(updateLayer(payload.new))
+          } else if (payload.eventType === "DELETE") {
+            dispatch(deleteLayer(payload.old.id))
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log("Channel status:", status) // <- status: SUBSCRIBED, TIMED_OUT, CLOSED
+      })
+
+    return () => {
+      supabase.removeChannel(channel)
     }
   }, [])
 

@@ -21,11 +21,6 @@ function EditVisibility({ layer }) {
     toast.promise(editVisibility(id), {
       loading: "Updating layer...",
       success: () => ({
-        description: "Refresh the page to view the changes",
-        action: {
-          label: "Refresh",
-          onClick: () => window.location.reload(),
-        },
         message: "Layer's visibility has been updated",
         duration: 15000,
       }),

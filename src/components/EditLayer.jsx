@@ -44,11 +44,6 @@ export default function EditLayer({ layer, setEdited }) {
     toast.promise(editLayer({ id: layer.id, data }), {
       loading: "Updating layer...",
       success: () => ({
-        description: "Refresh the page to view the changes",
-        action: {
-          label: "Refresh",
-          onClick: () => window.location.reload(),
-        },
         message: "Layer has been updated",
         duration: 15000,
       }),

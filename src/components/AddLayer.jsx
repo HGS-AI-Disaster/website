@@ -41,11 +41,6 @@ export default function AddLayer() {
     toast.promise(addLayer(data), {
       loading: "Uploading layer...",
       success: (res) => ({
-        description: "Refresh the page to view the changes",
-        action: {
-          label: "Refresh",
-          onClick: () => window.location.reload(),
-        },
         message: `Layer for ${new Date(res.layer_date).toLocaleDateString(
           "en-GB",
           {
