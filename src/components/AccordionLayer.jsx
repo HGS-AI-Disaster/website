@@ -6,6 +6,11 @@ import {
   AccordionTrigger,
 } from "./ui/accordion"
 import { Badge } from "./ui/badge"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -56,7 +61,7 @@ function AccordionLayer({
       <Accordion
         type="single"
         collapsible
-        className="min-w-[169.66px] absolute shadow-md rounded-lg bg-gray-50"
+        className="w-[200px] absolute shadow-md rounded-lg bg-gray-50"
       >
         {/* loop untuk source */}
         {Object.entries(groupedBySource).map(
@@ -83,34 +88,50 @@ function AccordionLayer({
                         <AccordionItem
                           key={`${sourceName}-${cat}`}
                           value={`${sourceName}-${cat}`}
+                          className="border-0"
                         >
-                          <AccordionTrigger className="pe-2 ps-5 pt-0 pb-1 font-semibold">
+                          <AccordionTrigger className="pe-2 ps-5 pt-1 pb-1 font-semibold">
                             {cat}
                           </AccordionTrigger>
                           <AccordionContent className="flex pb-0 flex-col max-h-50 overflow-y-auto w-full">
                             {catLayers.map((layer, index) => (
-                              <a
-                                key={index}
-                                onClick={(e) => {
-                                  e.preventDefault()
-                                  setCurrentLayer(layer)
-                                }}
-                                className="cursor-default"
-                              >
-                                <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100 w-full">
-                                  <div className="flex-1 truncate ps-6 w-full">
-                                    {layer.layer}
-                                  </div>
-                                  {currentLayer?.layer === layer.layer && (
-                                    <Badge
-                                      variant={"outline"}
-                                      className="text-[10px] text-gray-500 px-1"
-                                    >
-                                      active
-                                    </Badge>
+                              <>
+                                <Tooltip
+                                  delayDuration={400}
+                                  skipDelayDuration={500}
+                                >
+                                  <TooltipTrigger
+                                    key={index}
+                                    onClick={() => {
+                                      setCurrentLayer(layer)
+                                    }}
+                                    className="cursor-default"
+                                  >
+                                    <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100 w-full">
+                                      <div className="text-left ps-8 truncate w-full">
+                                        {layer.layer}
+                                      </div>
+                                      {currentLayer?.layer === layer.layer && (
+                                        <Badge
+                                          variant={"outline"}
+                                          className="text-[10px] text-gray-500 px-1 me-6"
+                                        >
+                                          active
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </TooltipTrigger>
+                                  {layer.layer.length > 16 ||
+                                  (layer.layer.length > 10 &&
+                                    currentLayer?.layer === layer.layer) ? (
+                                    <TooltipContent>
+                                      <p>{layer.layer}</p>
+                                    </TooltipContent>
+                                  ) : (
+                                    ""
                                   )}
-                                </div>
-                              </a>
+                                </Tooltip>
+                              </>
                             ))}
                           </AccordionContent>
                         </AccordionItem>

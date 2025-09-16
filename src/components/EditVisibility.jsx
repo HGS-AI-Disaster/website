@@ -51,6 +51,11 @@ function EditVisibility({ layer }) {
             Set visibility to{" "}
             {layer.original.visibility === "public" ? "private" : "public"}?
           </DialogTitle>
+          <DialogDescription>
+            {layer.original.visibility === "public"
+              ? "If you set the visibility to private, the public will no longer be able to view this layer. You can change this setting again later."
+              : "If you set the visibility to public, the public will be able to view this layer. You can change this setting again later."}
+          </DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>

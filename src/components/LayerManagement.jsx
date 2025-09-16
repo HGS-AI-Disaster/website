@@ -46,6 +46,7 @@ import DeleteLayer from "./DeleteLayer"
 import { getLayers } from "@/supabase/actions/layer"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
+import { minSize } from "zod"
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
@@ -62,6 +63,8 @@ const sortByDate = (rowA, rowB, columnId) => {
 export const columns = [
   {
     accessorKey: "layer",
+    maxSize: 100,
+    minSize: 10,
     header: ({ column }) => {
       return (
         <div className="flex items-center gap-1">
@@ -70,14 +73,15 @@ export const columns = [
             variant="ghost"
             className="hover:bg-gray-200 !p-1 h-fit"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            // onClick={() => console.log(column)}
           >
             <ArrowUpDown />
           </Button>
         </div>
       )
     },
-    cell: ({ row }) => <div>{row.getValue("layer")}</div>,
+    cell: ({ row }) => (
+      <div className="truncate max-w-[350px]">{row.getValue("layer")}</div>
+    ),
   },
   {
     accessorKey: "category",
@@ -212,7 +216,7 @@ function LayerManagement() {
         <div className="heading flex items-center">
           <div className="title flex-1">
             <div className="text-xl font-semibold">Layer Management</div>
-            <div className="text-gray-400">Manage Layer (TIFF and GeoJSON)</div>
+            <div className="text-gray-400">Manage Layer (GeoJSON)</div>
           </div>
           <div className="flex-1 flex justify-end gap-2">
             <Input
@@ -398,7 +402,10 @@ function LayerManagement() {
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => {
                       return (
-                        <TableHead key={header.id}>
+                        <TableHead
+                          key={header.id}
+                          style={{ width: header.getSize() }}
+                        >
                           {header.isPlaceholder
                             ? null
                             : flexRender(
@@ -419,7 +426,10 @@ function LayerManagement() {
                       data-state={row.getIsSelected() && "selected"}
                     >
                       {row.getVisibleCells().map((cell) => (
-                        <TableCell key={cell.id}>
+                        <TableCell
+                          key={cell.id}
+                          style={{ width: cell.column.getSize() }}
+                        >
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()
@@ -440,9 +450,19 @@ function LayerManagement() {
                     ) : (
                       <TableCell
                         colSpan={columns?.length}
-                        className="h-24 text-center"
+                        className=""
                       >
-                        No results.
+                        <div className="h-full flex flex-col justify-center items-center my-4">
+                          <img
+                            src="https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/ChatGPT%20Image%20Sep%2016,%202025,%2006_10_29%20PM.png"
+                            alt=""
+                            srcset=""
+                            className="w-[90px] rounded-full "
+                          />
+                          <div className="text-gray-600 mt-2">
+                            Data is empty
+                          </div>
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>

@@ -27,7 +27,7 @@ import { useEffect } from "react"
 import { toast } from "sonner"
 import { editLayer } from "@/supabase/actions/layer"
 
-export default function EditLayer({ layer, setEdited }) {
+export default function EditLayer({ layer }) {
   const {
     control,
     register,
@@ -55,7 +55,6 @@ export default function EditLayer({ layer, setEdited }) {
     })
 
     reset()
-    // setEdited((value) => !value)
     setFileName("")
     setOpen(false)
   }
@@ -63,7 +62,11 @@ export default function EditLayer({ layer, setEdited }) {
   return (
     <Dialog
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={() => {
+        setOpen(!open)
+        setFileName("")
+        reset()
+      }}
     >
       <DialogTrigger asChild>
         <Pencil className="size-[1rem] cursor-pointer" />
@@ -153,10 +156,11 @@ export default function EditLayer({ layer, setEdited }) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Cloud Layer">Cloud Layer</SelectItem>
-                    <SelectItem value="Disaster Layer">
-                      Disaster Layer
-                    </SelectItem>
+                    <SelectItem value="Cloud">Cloud</SelectItem>
+                    <SelectItem value="Earthquake">Earthquake</SelectItem>
+                    <SelectItem value="Heavy Rain">Heavy Rain</SelectItem>
+                    <SelectItem value="Flood">Flood</SelectItem>
+                    <SelectItem value="Typhoon">Typhoon</SelectItem>
                     <SelectItem value="Chiba University">
                       Chiba University
                     </SelectItem>
@@ -187,12 +191,36 @@ export default function EditLayer({ layer, setEdited }) {
 
           {/* Source */}
           <div className="grid w-full items-center gap-2">
-            <Label htmlFor="source">Source</Label>
+            {/* <Label htmlFor="source">Source</Label>
             <Input
               id="source"
               {...register("source")}
               defaultValue={layer.source}
+            /> */}
+            <Label htmlFor="source">Source</Label>
+            <Controller
+              name="source"
+              control={control}
+              defaultValue={layer.source}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="prediction">Prediction</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             />
+            {errors.visibility && (
+              <p className="text-red-500 text-xs">Visibility is required</p>
+            )}
           </div>
 
           {/* Visibility */}

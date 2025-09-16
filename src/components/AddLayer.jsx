@@ -22,7 +22,7 @@ import { useForm, Controller } from "react-hook-form"
 import { useState } from "react"
 import { toast } from "sonner"
 import { supabase } from "@/supabase"
-import { addLayer } from "@/supabase/actions/layer"
+import { addLayer, getLayers } from "@/supabase/actions/layer"
 
 export default function AddLayer() {
   const {
@@ -30,6 +30,7 @@ export default function AddLayer() {
     register,
     handleSubmit,
     setValue,
+    getValues,
     reset,
     formState: { errors },
   } = useForm()
@@ -64,7 +65,11 @@ export default function AddLayer() {
   return (
     <Dialog
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={() => {
+        setOpen(!open)
+        setFileName("")
+        reset()
+      }}
     >
       <DialogTrigger asChild>
         <Button
@@ -138,10 +143,9 @@ export default function AddLayer() {
             <Label htmlFor="layer">Layer Name</Label>
             <Input
               id="layer"
-              //   placeholder="Layer Name"
               {...register("layer", { required: true })}
             />
-            {errors.name && (
+            {errors.layer && (
               <p className="text-red-500 text-xs">Layer name is required</p>
             )}
           </div>
@@ -149,27 +153,33 @@ export default function AddLayer() {
           {/* Layer Category */}
           <div className="grid w-full items-center gap-2">
             <Label htmlFor="category">Category</Label>
-            <Select
-              id="category"
-              className="w-full"
-              onValueChange={(val) => setValue("category", val)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Cloud">Cloud</SelectItem>
-                <SelectItem value="Earthquake">Earthquake</SelectItem>
-                <SelectItem value="Heavy Rain">Heavy Rain</SelectItem>
-                <SelectItem value="Flood">Flood</SelectItem>
-                <SelectItem value="Typhoon">Typhoon</SelectItem>
-                <SelectItem value="Chiba University">
-                  Chiba University
-                </SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="category"
+              control={control}
+              rules={{ required: "Category is required" }}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Cloud">Cloud</SelectItem>
+                    <SelectItem value="Earthquake">Earthquake</SelectItem>
+                    <SelectItem value="Heavy Rain">Heavy Rain</SelectItem>
+                    <SelectItem value="Flood">Flood</SelectItem>
+                    <SelectItem value="Typhoon">Typhoon</SelectItem>
+                    <SelectItem value="Chiba University">
+                      Chiba University
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.category && (
-              <p className="text-red-500 text-xs">Category is required</p>
+              <p className="text-red-500 text-xs">{errors.category.message}</p>
             )}
           </div>
 
@@ -187,32 +197,63 @@ export default function AddLayer() {
           </div>
 
           {/* Source */}
+          {/* Source */}
           <div className="grid w-full items-center gap-2">
             <Label htmlFor="source">Source</Label>
-            <Input
-              id="source"
-              {...register("source")}
+            <Controller
+              name="source"
+              control={control}
+              defaultValue="admin"
+              rules={{ required: "Source is required" }}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin">
+                      Admin{" "}
+                      <span className="text-xs text-gray-400">(default)</span>
+                    </SelectItem>
+                    <SelectItem value="prediction">Prediction</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             />
+            {errors.source && (
+              <p className="text-red-500 text-xs">{errors.source.message}</p>
+            )}
           </div>
 
           {/* Visibility */}
           <div className="grid w-full items-center gap-2">
             <Label htmlFor="visibility">Visibility</Label>
-            <Select
-              id="visibility"
-              className="w-full"
-              onValueChange={(val) => setValue("visibility", val)}
-            >
-              <SelectTrigger className={"w-full"}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="public">Public</SelectItem>
-                <SelectItem value="private">Private</SelectItem>
-              </SelectContent>
-            </Select>
+            <Controller
+              name="visibility"
+              control={control}
+              rules={{ required: "Visibility is required" }}
+              render={({ field }) => (
+                <Select
+                  onValueChange={field.onChange}
+                  value={field.value}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            />
             {errors.visibility && (
-              <p className="text-red-500 text-xs">Visibility is required</p>
+              <p className="text-red-500 text-xs">
+                {errors.visibility.message}
+              </p>
             )}
           </div>
 

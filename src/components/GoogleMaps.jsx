@@ -86,7 +86,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [supercluster, setSupercluster] = useState(null)
 
   useEffect(() => {
-    if (!layersData || layersData.length === 0) {
+    if (
+      !layersData ||
+      layersData.length === 0 ||
+      layersData.find((l) => l.visibility === "public") === undefined
+    ) {
       console.log("layersData is empty, clearing map elements.")
       setPolygons([])
       setRoutePath([])
@@ -224,12 +228,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     return () => controller.abort()
   }, [currentLayer])
-
-  // useEffect(() => {
-  //   if (polygons.length) {
-  //     handleFindExit()
-  //   }
-  // }, [polygons])
 
   useEffect(() => {
     async function loadProcessedShelters() {

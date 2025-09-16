@@ -46,10 +46,10 @@ function DeleteLayer({ layer }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Delete layer</DialogTitle>
-          <DialogDescription>
+          <DialogTitle>
             Are you sure to delete {layer.original.layer}?
-          </DialogDescription>
+          </DialogTitle>
+          <DialogDescription>This action can't be undone.</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <DialogClose asChild>
