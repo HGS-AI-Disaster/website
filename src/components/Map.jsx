@@ -18,9 +18,7 @@ function Map() {
     libraries,
   })
 
-  const [layers, setLayers] = useState([])
   const [currentLayer, setCurrentLayer] = useState(null)
-  const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [searchResult, setSearchResult] = useState(null)
 
@@ -28,37 +26,12 @@ function Map() {
     setLoading(true)
     if (layersData.length) {
       const validLayers = layersData.filter((l) => l.file_url)
-      setCurrentLayer(validLayers[0] || null)
+      const visibleLayers = validLayers.filter((l) => l.visibility === "public")
+      setCurrentLayer(visibleLayers[0] || null)
+    } else {
+      setCurrentLayer(null)
     }
     setLoading(false)
-
-    // const fetchLayers = async () => {
-    //   setLoading(true)
-    //   try {
-    //     const data = await getPublicLayers()
-
-    //     const validLayers = data.filter((l) => l.file_url)
-    //     setLayers(validLayers)
-    //     setCurrentLayer(validLayers[0] || null)
-
-    //     if (!data.length) {
-    //       toast.error(
-    //         "There is no prediction layer at this time, please come back later",
-    //         {
-    //           duration: Infinity,
-    //           closeButton: <div>Close</div>,
-    //           position: "bottom-center",
-    //         }
-    //       )
-    //     }
-    //   } catch (err) {
-    //     setError(err)
-    //   } finally {
-    //     setLoading(false)
-    //   }
-    // }
-
-    // fetchLayers()
   }, [layersData])
 
   if (!isLoaded || loading) return <p>Loading Map...</p>

@@ -206,25 +206,6 @@ function LayerManagement() {
     return [...new Set(raw.map((item) => item[key]))]
   }
 
-  // const fetchData = async () => {
-  //   try {
-  //     const data = await getLayers()
-  //     setData(data)
-  //     setRawData(data)
-  //   } catch (error) {
-  //     toast.error(error)
-  //   }
-  //   setLoading(false)
-  // }
-
-  // useEffect(() => {
-  //   fetchData()
-
-  //   if (layersData.length) {
-
-  //   }
-  // }, [layersData])
-
   return (
     <div className="bg-gray-200 p-12">
       <div className="bg-gray-50 py-8 px-12 rounded-lg  overflow-x-auto">

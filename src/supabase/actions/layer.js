@@ -34,7 +34,6 @@ export const addLayer = async (data) => {
   const fileExt = layerFile.name.split(".").pop()
   const filePath = `${Date.now()}.${fileExt}`
 
-  // Upload file ke storage
   const { error: uploadError } = await supabase.storage
     .from("layers")
     .upload(filePath, layerFile, {
@@ -44,12 +43,10 @@ export const addLayer = async (data) => {
 
   if (uploadError) throw uploadError
 
-  // Dapatkan public URL
   const { data: publicUrl } = supabase.storage
     .from("layers")
     .getPublicUrl(filePath)
 
-  // Insert ke tabel `layers`
   const { data: addLayerData, error: addLayerError } = await supabase
     .from("layers")
     .insert([

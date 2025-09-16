@@ -158,8 +158,11 @@ export default function AddLayer() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Cloud Layer">Cloud Layer</SelectItem>
-                <SelectItem value="Disaster Layer">Disaster Layer</SelectItem>
+                <SelectItem value="Cloud">Cloud</SelectItem>
+                <SelectItem value="Earthquake">Earthquake</SelectItem>
+                <SelectItem value="Heavy Rain">Heavy Rain</SelectItem>
+                <SelectItem value="Flood">Flood</SelectItem>
+                <SelectItem value="Typhoon">Typhoon</SelectItem>
                 <SelectItem value="Chiba University">
                   Chiba University
                 </SelectItem>

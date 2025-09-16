@@ -11,7 +11,7 @@ export const login = (email, password) => async (dispatch) => {
 
     if (error) throw error
 
-    const { user, session } = data
+    const { user } = data
 
     // ambil profile user (kalau kamu pakai table profiles)
     const { data: profile, error: profileError } = await supabase

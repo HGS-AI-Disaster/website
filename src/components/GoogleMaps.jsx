@@ -34,6 +34,7 @@ import {
   HoverCardTrigger,
 } from "@/components/ui/hover-card"
 import { toast } from "sonner"
+import { useSelector } from "react-redux"
 
 const containerStyle = {
   width: "100%",
@@ -69,6 +70,8 @@ function geoJsonToPolygons(geojson) {
 }
 
 function GoogleMaps({ currentLayer, searchResult }) {
+  const { data: layersData, status } = useSelector((state) => state.layers)
+
   const [loading, setLoading] = useState(false)
   const [polygons, setPolygons] = useState([])
   const [routePath, setRoutePath] = useState([])
@@ -76,13 +79,24 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const mapRef = useRef(null)
   const [waypoints, setWaypoints] = useState([]) // simpan titik2 pilihan user
   const [waypointMarkers, setWaypointMarkers] = useState([])
-  const [clusteredMarkers, setClusteredMarkers] = useState([])
   const [dialogIsOpen, setDialogIsOpen] = useState(false)
   const [selectedShelter, setSelectedShelter] = useState()
   const [mapReady, setMapReady] = useState(false)
-  const [visibleMarkers, setVisibleMarkers] = useState([])
   const [clusters, setClusters] = useState([])
   const [supercluster, setSupercluster] = useState(null)
+
+  useEffect(() => {
+    if (!layersData || layersData.length === 0) {
+      console.log("layersData is empty, clearing map elements.")
+      setPolygons([])
+      setRoutePath([])
+      setClusters([])
+      setWaypoints([])
+      setWaypointMarkers([])
+      setSupercluster(null)
+      setShelters([])
+    }
+  }, [layersData])
 
   const handleIdle = () => {
     setMapReady(true)
@@ -143,36 +157,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
     (map) => {
       mapRef.current = map
 
-      // Style polygon berdasarkan Label
-      map.data.setStyle((feature) => {
-        const label = feature.getProperty("Label")
-        let fillColor = "#9e9e9e" // default abu
-
-        switch (label) {
-          case "0":
-            fillColor = "#4caf50" // hijau
-            break
-          case "1":
-            fillColor = "#ffeb3b" // kuning
-            break
-          case "2":
-            fillColor = "#ff9800" // orange
-            break
-          case "3":
-            fillColor = "#f44336" // merah
-            break
-          default:
-            fillColor = "#9e9e9e"
-        }
-
-        return {
-          fillColor,
-          strokeColor: "#F0F0F0",
-          strokeWeight: 0.5,
-          fillOpacity: 0.6,
-        }
-      })
-
       if (currentLayer?.file_url) {
         fetchFileUrl(currentLayer.file_url)
       }
@@ -232,117 +216,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
-  // function getNearestExitPoint(userLocation, safePolygons) {
-  //   if (!userLocation || !safePolygons.length) return null
-
-  //   // filter zone label = 0
-  //   const greenPolys = safePolygons.filter((p) => p.label === "0")
-  //   if (!greenPolys.length) return null
-
-  //   const userPoint = turf.point([userLocation.lng, userLocation.lat])
-
-  //   let nearestExit = null
-  //   let minDistance = Infinity
-
-  //   greenPolys.forEach((poly) => {
-  //     let geom
-  //     if (poly.type === "Polygon") {
-  //       geom = turf.polygon(poly.coordinates)
-  //     } else if (poly.type === "MultiPolygon") {
-  //       geom = turf.multiPolygon(poly.coordinates)
-  //     }
-
-  //     // iterasi semua koordinat vertex dalam polygon
-  //     turf.coordEach(geom, (coord) => {
-  //       const candidate = turf.point(coord)
-  //       const distance = turf.distance(userPoint, candidate)
-
-  //       if (distance < minDistance) {
-  //         minDistance = distance
-  //         nearestExit = {
-  //           lat: coord[1],
-  //           lng: coord[0],
-  //         }
-  //       }
-  //     })
-  //   })
-
-  //   return nearestExit
-  // }
-
-  // async function getRoute(origin, destination) {
-  //   const response = await fetch(
-  //     "https://routes.googleapis.com/directions/v2:computeRoutes",
-  //     {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-  //         "X-Goog-FieldMask":
-  //           "routes.polyline.encodedPolyline,routes.duration,routes.distanceMeters",
-  //       },
-  //       body: JSON.stringify({
-  //         origin: {
-  //           location: {
-  //             latLng: { latitude: origin.lat, longitude: origin.lng },
-  //           },
-  //         },
-  //         destination: {
-  //           location: {
-  //             latLng: { latitude: destination.lat, longitude: destination.lng },
-  //           },
-  //         },
-  //         travelMode: "DRIVE",
-  //       }),
-  //     }
-  //   )
-
-  //   const data = await response.json()
-  //   return data.routes?.[0] || null
-  // }
-
-  // const handleFindExit = async () => {
-  //   const exitPoint = getNearestExitPoint(userLocation, polygons)
-  //   if (exitPoint) {
-  //     const route = await getRoute(userLocation, exitPoint)
-  //     if (route) {
-  //       const decodedPath = polyline
-  //         .decode(route.polyline.encodedPolyline)
-  //         .map(([lat, lng]) => ({
-  //           lat,
-  //           lng,
-  //         }))
-  //       setRoutePath(decodedPath)
-  //     }
-  //   } else {
-  //     console.error("Tidak ditemukan rute")
-  //   }
-  // }
-
-  async function fetchGeoJson(url) {
-    try {
-      const res = await fetch(url)
-      const data = await res.json()
-
-      // kalau file GeoJSON valid biasanya bentuknya FeatureCollection
-      if (data.type === "FeatureCollection") {
-        return data.features
-      } else if (data.type === "Feature") {
-        return [data]
-      } else {
-        console.error("File bukan GeoJSON valid:", data)
-        return []
-      }
-    } catch (err) {
-      console.error("Gagal fetch GeoJSON:", err)
-      return []
-    }
-  }
-
-  useEffect(() => {
-    console.log(currentLayer)
-  }, [currentLayer])
-
   useEffect(() => {
     if (!mapRef.current || !currentLayer?.file_url) return
 
@@ -363,39 +236,25 @@ function GoogleMaps({ currentLayer, searchResult }) {
       if (!currentLayer?.processed_url) return
 
       try {
-        const cacheKey = `shelters_${currentLayer.id}`
-        const cached = localStorage.getItem(cacheKey)
-        if (cached) {
-          console.log("Load dari cache")
-          console.log(localStorage)
-          const parsed = JSON.parse(cached)
-          setShelters(parsed) // tetap update state React
-          return
-        }
-
         const res = await fetch(currentLayer.processed_url)
 
         const data = await res.json()
 
         if (data.type === "FeatureCollection") {
-          // console.log(data)
-          localStorage.setItem(cacheKey, JSON.stringify(data.features))
-          setShelters(data.features) // langsung isi shelter hasil Edge Function
+          // localStorage.setItem(cacheKey, JSON.stringify(data.features))
+          setShelters(data.features)
           return
         } else {
-          console.error("Processed GeoJSON tidak valid:", data)
+          console.error("Processed GeoJSON is not valid:", data)
           return
         }
       } catch (err) {
-        console.error("Gagal fetch processed shelters:", err)
+        console.error("Failed to fetch processed shelters:", err)
       }
     }
 
     if (mapReady && currentLayer?.processed_url) {
-      toast.promise(loadProcessedShelters(), {
-        loading: "Loading shelters...",
-        error: "Failed to load shelters",
-      })
+      loadProcessedShelters()
     }
   }, [mapReady, currentLayer?.processed_url])
 
@@ -423,7 +282,9 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     while (currentZone >= 0) {
       const candidates = shelters.filter(
-        (h) => h.zoneLabel !== null && h.zoneLabel <= currentZone
+        (h) =>
+          h.properties.zoneLabel !== null &&
+          h.properties.zoneLabel <= currentZone
       )
 
       if (!candidates.length) break
@@ -452,7 +313,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
         lng: nearest.geometry.coordinates[0],
         lat: nearest.geometry.coordinates[1],
       }
-      currentZone = nearest.zoneLabel - 1
+      currentZone = nearest.properties.zoneLabel - 1
     }
 
     const markers = shelters.filter((f) =>
@@ -463,27 +324,29 @@ function GoogleMaps({ currentLayer, searchResult }) {
       )
     )
 
-    const clustered = shelters.filter(
-      (f) =>
-        !routeSteps.some(
-          (wp) =>
-            wp.lat === f.geometry.coordinates[1] &&
-            wp.lng === f.geometry.coordinates[0]
-        )
-    )
-
     setWaypoints(routeSteps)
     setWaypointMarkers(markers)
-    setClusteredMarkers(clustered)
 
     return routeSteps
   }
 
   useEffect(() => {
+    // kalau salah satu kosong langsung reset
+    if (!userLocation || !shelters.length || !polygons.length) {
+      setRoutePath([])
+      setWaypoints([])
+      setWaypointMarkers([])
+      return
+    }
+
+    // kalau ada semua baru plan
     planEvacuationRoute(userLocation, shelters, polygons)
-  }, [shelters, polygons, currentLayer, mapRef.current])
+  }, [shelters, polygons, currentLayer, userLocation])
 
   useEffect(() => {
+    let active = true // flag aktif
+    const controller = new AbortController()
+
     async function getRouteWithWaypoints(origin, waypoints) {
       const body = {
         origin: {
@@ -505,7 +368,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
           },
         })),
         travelMode: "DRIVE",
-        routingPreference: "TRAFFIC_AWARE_OPTIMAL", // 🚨 tambahin ini biar pake rute jalan beneran
+        routingPreference: "TRAFFIC_AWARE_OPTIMAL",
       }
 
       const response = await fetch(
@@ -523,6 +386,9 @@ function GoogleMaps({ currentLayer, searchResult }) {
       )
 
       const data = await response.json()
+
+      if (!active) return
+
       const output = data.routes?.[0] || null
 
       if (output) {
@@ -539,10 +405,18 @@ function GoogleMaps({ currentLayer, searchResult }) {
       }
     }
 
-    if (waypoints.length) {
-      toast.promise(getRouteWithWaypoints(userLocation, waypoints), {
-        loading: "Finding evacuation route...",
-      })
+    if (!waypoints.length) {
+      setRoutePath([]) // Logika ini yang seharusnya menghapus polyline
+      return
+    }
+
+    toast.promise(getRouteWithWaypoints(userLocation, waypoints), {
+      loading: "Finding evacuation route...",
+    })
+
+    return () => {
+      active = false // hentikan setState setelah unmount/reset
+      controller.abort() // batalkan fetch
     }
   }, [waypoints, userLocation])
 
@@ -672,11 +546,16 @@ function GoogleMaps({ currentLayer, searchResult }) {
           >
             {mapReady && (
               <>
-                {routePath.length > 0 && (
+                {routePath && routePath.length > 0 && layersData.length > 0 && (
                   <Polyline
-                    path={routePath}
+                    key={
+                      layersData.length > 0
+                        ? "polyline-active"
+                        : "polyline-inactive"
+                    }
+                    path={layersData.length > 0 ? routePath : []}
                     options={{
-                      strokeColor: "#0000FF",
+                      strokeColor: "#0000F1",
                       strokeOpacity: 0.8,
                       strokeWeight: 5,
                       zIndex: 9999,
@@ -725,7 +604,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     <Marker
                       key={`waypoint-${i}`}
                       position={{ lat, lng }}
-                      title={f.properties?.name || "Evacuation Shelter"}
+                      title={
+                        `${f.properties?.name} (Click to see details)` ||
+                        "Evacuation Shelter (Click to see details)"
+                      }
                       onClick={() => {
                         setSelectedShelter(f)
                         setDialogIsOpen(true)
@@ -734,64 +616,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
                   )
                 })}
 
-                {/* 2. Cluster untuk marker lain */}
-                {/* <MarkerClusterer
-                  options={{
-                    styles: [
-                      {
-                        url:
-                          "data:image/svg+xml;charset=UTF-8," +
-                          encodeURIComponent(`
-            <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40">
-              <defs>
-                <radialGradient id="inner-glow" cx="50%" cy="50%" r="50%">
-                <stop offset="60%" stop-color="rgba(37, 99, 235, 0.9)" />
-                  <stop offset="100%" stop-color="rgba(37, 99, 235, 0)" />
-                </radialGradient>
-              </defs>
-              <!-- lingkaran glow -->
-              // <circle cx="20" cy="20" r="19" fill="url(#inner-glow)" />
-            </svg>
-          `),
-                        height: 40,
-                        width: 40,
-                        textColor: "#FFFFFF",
-                        textSize: 10,
-                        fontFamily: "Arial, sans-serif",
-                        fontWeight: "300", // light
-                      },
-                    ],
-                    gridSize: 150,
-                    minimumClusterSize: 4,
-                  }}
-                >
-                  {(clusterer) =>
-                    clusteredMarkers.map((f, i) => {
-                      const [lng, lat] = f.geometry.coordinates
-                      return (
-                        <Marker
-                          key={`cluster-${i}`}
-                          clusterer={clusterer}
-                          position={{ lat, lng }}
-                          icon={{
-                            url: `https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/clinic_4970758.png`,
-                            scaledSize: new window.google.maps.Size(32, 32), // ubah ukuran sesuai kebutuhan
-                            // optional: atur anchor biar pas titiknya di tengah bawah
-                            anchor: new window.google.maps.Point(16, 32),
-                          }}
-                          title={
-                            `${f.properties?.name} (click to see details)` ||
-                            "Evacuation Shelter (click to see details)"
-                          }
-                          onClick={() => {
-                            setSelectedShelter(f)
-                            setDialogIsOpen(true)
-                          }}
-                        />
-                      )
-                    })
-                  }
-                </MarkerClusterer> */}
                 {clusters.map((cluster, i) => {
                   const [lng, lat] = cluster.geometry.coordinates
                   const { cluster: isCluster, point_count: pointCount } =
@@ -814,7 +638,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
                             background:
                               "radial-gradient(circle at center, rgba(0, 0, 255, 0.8), rgba(0, 0, 255, 0.6), rgba(255, 255, 255, 0.5))", // biru utama
                             color: "white",
-
                             fontSize: "10px",
                             width: 34,
                             height: 34,
