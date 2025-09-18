@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -30,6 +30,7 @@ import { toast } from "sonner"
 import { Badge } from "./ui/badge"
 import { Autocomplete } from "@react-google-maps/api"
 import AccordionLayer from "./AccordionLayer"
+import { ArrowLeft, ArrowRight } from "lucide-react"
 
 function Navigation({
   setSearchResult,
@@ -41,6 +42,9 @@ function Navigation({
   const [currentDate, setCurrentDate] = useState("")
   const [uniqueDates, setUniqueDates] = useState([])
   // const uniqueDates = [...new Set(layers.map((layer) => layer.layer_date))]
+
+  // ref untuk container yang bisa discroll
+  const scrollContainerRef = useRef(null)
 
   const onLoad = (ac) => setAutocomplete(ac)
 
@@ -74,6 +78,17 @@ function Navigation({
       }
     }
   }, [layers])
+
+  const scrollLeft = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: -100, behavior: "smooth" })
+    }
+  }
+  const scrollRight = () => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollBy({ left: 100, behavior: "smooth" })
+    }
+  }
 
   return (
     <div className="navigations h-full flex flex-col">
@@ -129,8 +144,25 @@ function Navigation({
       <div className="buttom flex-1 flex flex-col justify-end">
         <div className="time-series flex mb-8 flex-col items-center z-20">
           {uniqueDates.length ? (
-            <div className={"bg-gray-50 h-fit px-4 pt-[6px] rounded-lg"}>
-              <NavigationMenu className={"flex gap-2"}>
+            <div
+              className={
+                "bg-gray-50 h-fit items-center flex px-2 relative rounded-lg"
+              }
+            >
+              {uniqueDates.length > 6 && (
+                <div
+                  className="me-2 cursor-pointer"
+                  onClick={scrollLeft}
+                >
+                  <ArrowLeft size={18} />
+                </div>
+              )}
+              <NavigationMenu
+                ref={scrollContainerRef}
+                className={`flex gap-2 flex-1 overflow-x-auto scrollbar-none w-full max-w-[550px] ${
+                  uniqueDates.length > 6 ? "ps-24" : ""
+                }`}
+              >
                 {uniqueDates.sort().map((date) => {
                   const sampleLayer = layers.find(
                     (layer) => layer.layer_date === date
@@ -145,9 +177,9 @@ function Navigation({
                           setCurrentDate(sampleLayer.layer_date)
                           setCurrentLayer(sampleLayer)
                         }}
-                        className={`cursor-pointer px-4 bg-gray-50 hover:bg-gray-50 relative`}
+                        className={`cursor-pointer w-[85px] pt-[12px] px-4 bg-gray-50 hover:bg-gray-50 relative`}
                       >
-                        <div className={"mb-1"}>
+                        <div className={"mb-1 text-center"}>
                           {new Date(date).toLocaleDateString("en-GB", {
                             day: "2-digit",
                             month: "short",
@@ -162,6 +194,14 @@ function Navigation({
                   )
                 })}
               </NavigationMenu>
+              {uniqueDates.length > 6 && (
+                <div
+                  className="ms-2 cursor-pointer"
+                  onClick={scrollRight}
+                >
+                  <ArrowRight size={18} />
+                </div>
+              )}
             </div>
           ) : (
             ""

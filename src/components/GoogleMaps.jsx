@@ -22,6 +22,7 @@ import {
   Dot,
   LocateFixed,
   Navigation2,
+  TriangleAlert,
   Users,
   ZoomIn,
   ZoomOut,
@@ -84,6 +85,63 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [mapReady, setMapReady] = useState(false)
   const [clusters, setClusters] = useState([])
   const [supercluster, setSupercluster] = useState(null)
+  const [disasterPoint, setDisasterPoint] = useState({})
+  const [userLocation, setUserLocation] = useState({})
+  const [mapCenter, setMapCenter] = useState(center) // default center
+  // const [userLocation, setUserLocation] = useState({
+  //   lat: 35.20307959805068,
+  //   lng: 140.3732847887497,
+  // })
+
+  function isOutsideChiba(point) {
+    const minLat = 34.85,
+      maxLat = 35.96
+    const minLng = 139.69,
+      maxLng = 140.87
+
+    return (
+      point.lat < minLat ||
+      point.lat > maxLat ||
+      point.lng < minLng ||
+      point.lng > maxLng
+    )
+  }
+
+  function getCurrentLocation() {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const pos = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          }
+          setUserLocation(pos)
+
+          if (isOutsideChiba(pos)) {
+            // kalau di luar Chiba → center & starting point di disasterPoint
+            if (disasterPoint.lat) {
+              setMapCenter(disasterPoint)
+              // optionally panTo disasterPoint
+              mapRef.current?.panTo(disasterPoint)
+            }
+          } else {
+            setMapCenter(pos)
+            mapRef.current?.panTo(pos)
+          }
+        },
+        (error) => {
+          console.error("Gagal mendapatkan lokasi:", error)
+          alert("Gagal mendapatkan lokasi. Pastikan izin lokasi diaktifkan.")
+        }
+      )
+    } else {
+      alert("Geolocation tidak didukung oleh browser ini.")
+    }
+  }
+
+  useEffect(() => {
+    getCurrentLocation()
+  }, [disasterPoint])
 
   useEffect(() => {
     if (
@@ -146,6 +204,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
             propertyName: "Label",
           })
 
+          const disasterCenter = {
+            lat: polyFeatures[0].properties.Latitude,
+            lng: polyFeatures[0].properties.Longitude,
+          }
+
+          setDisasterPoint(disasterCenter)
+
           const polygonsData = geoJsonToPolygons(dissolved)
           setPolygons(polygonsData)
         })
@@ -164,26 +229,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
       if (currentLayer?.file_url) {
         fetchFileUrl(currentLayer.file_url)
       }
+
+      getCurrentLocation()
     },
     [currentLayer]
   )
 
-  const handleZoomIn = () => {
-    const map = mapRef.current
-    if (map) map.setZoom(map.getZoom() + 1)
-  }
-
-  const handleZoomOut = () => {
-    const map = mapRef.current
-    if (map) map.setZoom(map.getZoom() - 1)
-  }
-
-  const [userLocation, setUserLocation] = useState({
-    lat: 35.20307959805068,
-    lng: 140.3732847887497,
-  })
-
-  function getCurrentLocation() {
+  const getUserLoc = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -191,9 +243,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           }
-          setUserLocation(pos)
+
+          const isSameLocation = (a, b) => a.lat === b.lat && a.lng === b.lng
+
+          if (!isSameLocation(userLocation, pos)) {
+            setUserLocation(pos)
+          }
           mapRef.current?.panTo(pos)
-          mapRef.current?.setZoom(15)
         },
         (error) => {
           console.error("Gagal mendapatkan lokasi:", error)
@@ -203,6 +259,16 @@ function GoogleMaps({ currentLayer, searchResult }) {
     } else {
       alert("Geolocation tidak didukung oleh browser ini.")
     }
+  }
+
+  const handleZoomIn = () => {
+    const map = mapRef.current
+    if (map) map.setZoom(map.getZoom() + 1)
+  }
+
+  const handleZoomOut = () => {
+    const map = mapRef.current
+    if (map) map.setZoom(map.getZoom() - 1)
   }
 
   function getFillColor(label) {
@@ -257,8 +323,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [mapReady, currentLayer?.processed_url])
 
   async function planEvacuationRoute(userLoc, shelters, polygons) {
-    let currentPoint = userLoc
-    const userPoint = turf.point([currentPoint.lng, currentPoint.lat])
+    const startPoint =
+      isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
+
+    let currentPoint = startPoint
+    const startingPoint = turf.point([currentPoint.lng, currentPoint.lat])
     let currentZone = null
 
     polygons.forEach((poly) => {
@@ -269,7 +338,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
         geom = turf.multiPolygon(poly.coordinates)
       }
 
-      if (turf.booleanPointInPolygon(userPoint, geom)) {
+      if (turf.booleanPointInPolygon(startingPoint, geom)) {
         currentZone = poly.label
       }
     })
@@ -330,16 +399,21 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     // kalau salah satu kosong langsung reset
-    if (!userLocation || !shelters.length || !polygons.length) {
+    if (!userLocation.lat || !shelters.length || !polygons.length) {
       setRoutePath([])
       setWaypoints([])
       setWaypointMarkers([])
       return
     }
 
+    const start =
+      isOutsideChiba(userLocation) && disasterPoint.lat
+        ? disasterPoint
+        : userLocation
+
     // kalau ada semua baru plan
-    planEvacuationRoute(userLocation, shelters, polygons)
-  }, [shelters, polygons, currentLayer, userLocation])
+    planEvacuationRoute(start, shelters, polygons)
+  }, [shelters, polygons, currentLayer, userLocation, disasterPoint])
 
   useEffect(() => {
     let active = true // flag aktif
@@ -408,7 +482,9 @@ function GoogleMaps({ currentLayer, searchResult }) {
       return
     }
 
-    toast.promise(getRouteWithWaypoints(userLocation, waypoints), {
+    const origin = isOutsideChiba(userLocation) ? disasterPoint : userLocation
+
+    toast.promise(getRouteWithWaypoints(origin, waypoints), {
       loading: "Finding evacuation route...",
     })
 
@@ -532,7 +608,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
           </Dialog>
           <GoogleMap
             mapContainerStyle={containerStyle}
-            center={center}
+            center={mapCenter} // ganti dari disasterPoint
             zoom={12}
             options={{
               disableDefaultUI: true,
@@ -572,7 +648,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                         }))}
                         options={{
                           fillColor: getFillColor(poly.label),
-                          strokeWeight: 1,
+                          strokeWeight: 0,
                           strokeColor: "#F0F0F0",
                           fillOpacity: 0.6,
                         }}
@@ -585,7 +661,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                         paths={coords[0].map(([lng, lat]) => ({ lat, lng }))}
                         options={{
                           fillColor: getFillColor(poly.label),
-                          strokeWeight: 1,
+                          strokeWeight: 0,
                           strokeColor: "#F0F0F0",
                           fillOpacity: 0.6,
                         }}
@@ -686,14 +762,50 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     position={userLocation}
                     mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
                   >
-                    <HoverCard openDelay={0}>
-                      <HoverCardTrigger>
-                        <div className="h-4 w-4 border-2 rounded-full bg-red-500 border-white"></div>
-                      </HoverCardTrigger>
+                    <HoverCard
+                      openDelay={0}
+                      className=""
+                    >
+                      <div className="w-20 h-20 relative">
+                        <div className=" bg-blue-600 opacity-40 rounded-full w-13 h-13 relative -left-[18px] -top-1/4"></div>
+                        <HoverCardTrigger className="relative -top-8/12">
+                          <div className="h-4 w-4 border-2 rounded-full bg-blue-700 border-white"></div>
+                        </HoverCardTrigger>
+                      </div>
                       <HoverCardContent
                         className={"w-fit py-1 px-2 text-center"}
                       >
                         You are here
+                      </HoverCardContent>
+                    </HoverCard>
+                  </OverlayView>
+                )}
+
+                {/* Titik gempa */}
+                {disasterPoint.lat && (
+                  <OverlayView
+                    position={disasterPoint}
+                    mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                  >
+                    <HoverCard openDelay={0}>
+                      <HoverCardTrigger>
+                        <div className="h-6 w-6 border-2 bg-red-500 rounded-full flex items-center justify-center">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="14"
+                            height="14"
+                            fill="white"
+                            className="bi bi-exclamation-triangle-fill"
+                            viewBox="0 0 18 18"
+                          >
+                            <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5m.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2" />
+                          </svg>
+                        </div>
+                      </HoverCardTrigger>
+                      <HoverCardContent
+                        className={"w-fit py-1 px-2 text-center"}
+                      >
+                        Disaster point
                       </HoverCardContent>
                     </HoverCard>
                   </OverlayView>
@@ -724,7 +836,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
               </Button>
               <Button
                 className="w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
-                onClick={getCurrentLocation}
+                onClick={getUserLoc}
               >
                 <LocateFixed />
               </Button>

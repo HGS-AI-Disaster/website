@@ -95,43 +95,41 @@ function AccordionLayer({
                           </AccordionTrigger>
                           <AccordionContent className="flex pb-0 flex-col max-h-50 overflow-y-auto w-full">
                             {catLayers.map((layer, index) => (
-                              <>
-                                <Tooltip
-                                  delayDuration={400}
-                                  skipDelayDuration={500}
+                              <Tooltip
+                                key={index}
+                                delayDuration={400}
+                                skipDelayDuration={500}
+                              >
+                                <TooltipTrigger
+                                  onClick={() => {
+                                    setCurrentLayer(layer)
+                                  }}
+                                  className="cursor-default"
                                 >
-                                  <TooltipTrigger
-                                    key={index}
-                                    onClick={() => {
-                                      setCurrentLayer(layer)
-                                    }}
-                                    className="cursor-default"
-                                  >
-                                    <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100 w-full">
-                                      <div className="text-left ps-8 truncate w-full">
-                                        {layer.layer}
-                                      </div>
-                                      {currentLayer?.layer === layer.layer && (
-                                        <Badge
-                                          variant={"outline"}
-                                          className="text-[10px] text-gray-500 px-1 me-6"
-                                        >
-                                          active
-                                        </Badge>
-                                      )}
+                                  <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100 w-full">
+                                    <div className="text-left ps-8 truncate w-full">
+                                      {layer.layer}
                                     </div>
-                                  </TooltipTrigger>
-                                  {layer.layer.length > 16 ||
-                                  (layer.layer.length > 10 &&
-                                    currentLayer?.layer === layer.layer) ? (
-                                    <TooltipContent>
-                                      <p>{layer.layer}</p>
-                                    </TooltipContent>
-                                  ) : (
-                                    ""
-                                  )}
-                                </Tooltip>
-                              </>
+                                    {currentLayer?.id === layer.id && (
+                                      <Badge
+                                        variant={"outline"}
+                                        className="text-[10px] text-gray-500 px-1 me-6"
+                                      >
+                                        active
+                                      </Badge>
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                {layer.layer.length > 16 ||
+                                (layer.layer.length > 10 &&
+                                  currentLayer?.layer === layer.layer) ? (
+                                  <TooltipContent>
+                                    <p>{layer.layer}</p>
+                                  </TooltipContent>
+                                ) : (
+                                  ""
+                                )}
+                              </Tooltip>
                             ))}
                           </AccordionContent>
                         </AccordionItem>

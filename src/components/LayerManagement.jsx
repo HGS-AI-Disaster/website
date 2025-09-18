@@ -80,7 +80,7 @@ export const columns = [
       )
     },
     cell: ({ row }) => (
-      <div className="truncate max-w-[350px]">{row.getValue("layer")}</div>
+      <div className="truncate max-w-[360px]">{row.getValue("layer")}</div>
     ),
   },
   {
@@ -398,25 +398,29 @@ function LayerManagement() {
           <div className="overflow-hidden rounded-md border mt-8">
             <Table>
               <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <TableHead
-                          key={header.id}
-                          style={{ width: header.getSize() }}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </TableHead>
-                      )
-                    })}
-                  </TableRow>
-                ))}
+                {table.getHeaderGroups().map((headerGroup) => {
+                  return (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => {
+                        return (
+                          <TableHead
+                            key={header.id}
+                            className={`text-sm ${
+                              header.id === "layer" ? "w-[370px]" : ""
+                            }`}
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext()
+                                )}
+                          </TableHead>
+                        )
+                      })}
+                    </TableRow>
+                  )
+                })}
               </TableHeader>
               <TableBody>
                 {table.getRowModel().rows?.length ? (
@@ -428,7 +432,9 @@ function LayerManagement() {
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
-                          style={{ width: cell.column.getSize() }}
+                          className={`text-sm ${
+                            cell.id === "layer" ? "w-[370px]" : ""
+                          }`}
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
