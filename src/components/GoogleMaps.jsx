@@ -115,14 +115,21 @@ function GoogleMaps({ currentLayer, searchResult }) {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           }
+
           setUserLocation(pos)
 
           if (isOutsideChiba(pos)) {
             // kalau di luar Chiba → center & starting point di disasterPoint
             if (disasterPoint.lat) {
               setMapCenter(disasterPoint)
-              // optionally panTo disasterPoint
               mapRef.current?.panTo(disasterPoint)
+              toast.info("You’re currently outside Chiba.", {
+                description:
+                  "We don’t have data for your location yet. The evacuation routes shown are from the disaster point to the safest point, not from your current location.",
+                // duration: Infinity,
+                id: "outside-chiba",
+                duration: Number.POSITIVE_INFINITY,
+              })
             }
           } else {
             setMapCenter(pos)
@@ -249,7 +256,17 @@ function GoogleMaps({ currentLayer, searchResult }) {
           if (!isSameLocation(userLocation, pos)) {
             setUserLocation(pos)
           }
+
           mapRef.current?.panTo(pos)
+
+          if (isOutsideChiba(pos)) {
+            toast.info("You’re currently outside Chiba.", {
+              description: "We don’t have data for your location yet.",
+              // duration: Infinity,
+              id: "outside-chiba",
+              duration: Number.POSITIVE_INFINITY,
+            })
+          }
         },
         (error) => {
           console.error("Gagal mendapatkan lokasi:", error)
@@ -484,9 +501,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     const origin = isOutsideChiba(userLocation) ? disasterPoint : userLocation
 
-    toast.promise(getRouteWithWaypoints(origin, waypoints), {
-      loading: "Finding evacuation route...",
-    })
+    getRouteWithWaypoints(origin, waypoints)
 
     return () => {
       active = false // hentikan setState setelah unmount/reset

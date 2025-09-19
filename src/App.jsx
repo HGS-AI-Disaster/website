@@ -13,6 +13,7 @@ function App({ children }) {
         richColors
         position="top-center"
         expand={true}
+        closeButton
       />
       <RouterProvider router={router}>{children}</RouterProvider>
     </Provider>
