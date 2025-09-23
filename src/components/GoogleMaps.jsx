@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/hover-card"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
+import { marker } from "leaflet"
 
 const containerStyle = {
   width: "100%",
@@ -147,7 +148,9 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
-    getCurrentLocation()
+    if (disasterPoint.lat) {
+      getCurrentLocation()
+    }
   }, [disasterPoint])
 
   useEffect(() => {
@@ -303,6 +306,73 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
+  function isRouteSafe(encodedPolyline, polygons, fromZone, toZone) {
+    const decoded = polyline
+      .decode(encodedPolyline)
+      .map(([lat, lng]) => [lng, lat])
+
+    return !decoded.some((coord) => {
+      return polygons.some((poly) => {
+        const zone = Number(poly.label)
+
+        if (toZone < fromZone) {
+          // turun ke zona lebih aman → boleh lewat zona asal, tapi tidak boleh > fromZone
+          if (zone > fromZone) {
+            const geom =
+              poly.type === "Polygon"
+                ? turf.polygon(poly.coordinates)
+                : turf.multiPolygon(poly.coordinates)
+            return turf.booleanPointInPolygon(turf.point(coord), geom)
+          }
+        } else {
+          // kalau tujuan sama/lebih tinggi (lebih berbahaya) → tidak boleh lewat zona lebih tinggi dari tujuan
+          if (zone > toZone) {
+            const geom =
+              poly.type === "Polygon"
+                ? turf.polygon(poly.coordinates)
+                : turf.multiPolygon(poly.coordinates)
+            return turf.booleanPointInPolygon(turf.point(coord), geom)
+          }
+        }
+
+        return false
+      })
+    })
+  }
+
+  async function getSegmentRoute(origin, destination) {
+    const body = {
+      origin: {
+        location: { latLng: { latitude: origin.lat, longitude: origin.lng } },
+      },
+      destination: {
+        location: {
+          latLng: { latitude: destination.lat, longitude: destination.lng },
+        },
+      },
+      travelMode: "DRIVE",
+      routingPreference: "TRAFFIC_AWARE_OPTIMAL",
+      computeAlternativeRoutes: true,
+    }
+
+    const response = await fetch(
+      "https://routes.googleapis.com/directions/v2:computeRoutes",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+          "X-Goog-FieldMask":
+            "routes.polyline.encodedPolyline,routes.legs.steps.polyline.encodedPolyline",
+        },
+        body: JSON.stringify(body),
+      }
+    )
+
+    const data = await response.json()
+    return data?.routes || null
+  }
+
   useEffect(() => {
     if (!mapRef.current || !currentLayer?.file_url) return
 
@@ -339,7 +409,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }, [mapReady, currentLayer?.processed_url])
 
-  async function planEvacuationRoute(userLoc, shelters, polygons) {
+  async function planEvacuationRoute(userLoc, shelters, polygons, id) {
     const startPoint =
       isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
 
@@ -365,11 +435,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
     let routeSteps = []
 
     while (currentZone >= 0) {
-      const candidates = shelters.filter(
+      let candidates = shelters.filter(
         (h) =>
           h.properties.zoneLabel !== null &&
           h.properties.zoneLabel <= currentZone
       )
+
+      if (id) {
+        candidates.filter((h) => h.properties.id != id)
+      }
 
       if (!candidates.length) break
 
@@ -391,6 +465,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
       routeSteps.push({
         lng: nearest.geometry.coordinates[0],
         lat: nearest.geometry.coordinates[1],
+        zoneLabel: nearest.properties.zoneLabel, // penting buat filter
+        id: nearest.properties.id,
       })
 
       currentPoint = {
@@ -414,6 +490,117 @@ function GoogleMaps({ currentLayer, searchResult }) {
     return routeSteps
   }
 
+  // async function planEvacuationRoute(userLoc, shelters, polygons, id) {
+  //   const startPoint =
+  //     isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
+
+  //   let currentPoint = startPoint
+  //   const startingPoint = turf.point([currentPoint.lng, currentPoint.lat])
+  //   let currentZone = null
+
+  //   polygons.forEach((poly) => {
+  //     let geom
+  //     if (poly.type === "Polygon") {
+  //       geom = turf.polygon(poly.coordinates)
+  //     } else if (poly.type === "MultiPolygon") {
+  //       geom = turf.multiPolygon(poly.coordinates)
+  //     }
+  //     if (turf.booleanPointInPolygon(startingPoint, geom)) {
+  //       currentZone = poly.label
+  //     }
+  //   })
+
+  //   if (currentZone == null) return []
+
+  //   let routeSteps = []
+
+  //   while (currentZone >= 0) {
+  //     let candidates = shelters.filter(
+  //       (h) =>
+  //         h.properties.zoneLabel !== null &&
+  //         h.properties.zoneLabel <= currentZone
+  //     )
+
+  //     if (id) {
+  //       candidates = candidates.filter((h) => h.properties.id != id)
+  //     }
+  //     if (!candidates.length) break
+
+  //     // urutkan kandidat dari terdekat
+  //     candidates.sort((a, b) => {
+  //       const d1 = turf.distance(
+  //         turf.point([currentPoint.lng, currentPoint.lat]),
+  //         turf.point([a.geometry.coordinates[0], a.geometry.coordinates[1]])
+  //       )
+  //       const d2 = turf.distance(
+  //         turf.point([currentPoint.lng, currentPoint.lat]),
+  //         turf.point([b.geometry.coordinates[0], b.geometry.coordinates[1]])
+  //       )
+  //       return d1 - d2
+  //     })
+
+  //     let nearest = null
+
+  //     // cek rute satu per satu
+  //     for (const cand of candidates) {
+  //       try {
+  //         const routeData = await fetchRoute(currentPoint, {
+  //           lng: cand.geometry.coordinates[0],
+  //           lat: cand.geometry.coordinates[1],
+  //         })
+  //         const path = polyline
+  //           .decode(routeData.routes[0].geometry, 5)
+  //           .map(([lat, lng]) => ({ lat, lng }))
+
+  //         const safe = isRouteSafe(
+  //           path,
+  //           polygons,
+  //           currentZone,
+  //           cand.properties.zoneLabel
+  //         )
+  //         if (safe) {
+  //           nearest = cand
+  //           break
+  //         }
+  //       } catch (err) {
+  //         console.error("Error checking candidate route:", err)
+  //       }
+  //     }
+
+  //     if (!nearest) break
+
+  //     routeSteps.push({
+  //       lng: nearest.geometry.coordinates[0],
+  //       lat: nearest.geometry.coordinates[1],
+  //       zoneLabel: nearest.properties.zoneLabel,
+  //       id: nearest.properties.id,
+  //     })
+
+  //     currentPoint = {
+  //       lng: nearest.geometry.coordinates[0],
+  //       lat: nearest.geometry.coordinates[1],
+  //     }
+  //     currentZone = nearest.properties.zoneLabel - 1
+  //   }
+
+  //   const markers = shelters.filter((f) =>
+  //     routeSteps.some(
+  //       (wp) =>
+  //         wp.lat === f.geometry.coordinates[1] &&
+  //         wp.lng === f.geometry.coordinates[0]
+  //     )
+  //   )
+
+  //   setWaypoints(routeSteps)
+  //   setWaypointMarkers(markers)
+
+  //   return routeSteps
+  // }
+
+  useEffect(() => {
+    console.log({ waypoints })
+  }, [waypoints])
+
   useEffect(() => {
     // kalau salah satu kosong langsung reset
     if (!userLocation.lat || !shelters.length || !polygons.length) {
@@ -432,82 +619,173 @@ function GoogleMaps({ currentLayer, searchResult }) {
     planEvacuationRoute(start, shelters, polygons)
   }, [shelters, polygons, currentLayer, userLocation, disasterPoint])
 
+  function getZoneForPoint(point, polygons) {
+    let zone = null
+    const turfPoint = turf.point([point.lng, point.lat])
+
+    for (const poly of polygons) {
+      const geom =
+        poly.type === "Polygon"
+          ? turf.polygon(poly.coordinates)
+          : turf.multiPolygon(poly.coordinates)
+
+      if (turf.booleanPointInPolygon(turfPoint, geom)) {
+        zone = Number(poly.label)
+        break
+      }
+    }
+    return zone
+  }
+
+  // helper buat hitung bahaya rute
+  function countDangerPoints(path, polygons, fromZone) {
+    let dangerCount = 0
+
+    path.forEach((coordinate) => {
+      const point = turf.point([coordinate.lng, coordinate.lat])
+      polygons.forEach((poly) => {
+        let geom
+        if (poly.type === "Polygon") {
+          geom = turf.polygon(poly.coordinates)
+        } else if (poly.type === "MultiPolygon") {
+          geom = turf.multiPolygon(poly.coordinates)
+        }
+
+        if (turf.booleanPointInPolygon(point, geom)) {
+          if (poly.label > fromZone) {
+            dangerCount++
+          }
+        }
+      })
+    })
+
+    return dangerCount
+  }
+
   useEffect(() => {
-    let active = true // flag aktif
+    let active = true
     const controller = new AbortController()
 
-    async function getRouteWithWaypoints(origin, waypoints) {
-      const body = {
-        origin: {
-          location: {
-            latLng: { latitude: origin.lat, longitude: origin.lng },
-          },
-        },
-        destination: {
-          location: {
-            latLng: {
-              latitude: waypoints[waypoints.length - 1].lat,
-              longitude: waypoints[waypoints.length - 1].lng,
-            },
-          },
-        },
-        intermediates: waypoints.slice(0, -1).map((w) => ({
-          location: {
-            latLng: { latitude: w.lat, longitude: w.lng },
-          },
-        })),
-        travelMode: "DRIVE",
-        routingPreference: "TRAFFIC_AWARE_OPTIMAL",
+    async function buildSafeRoute() {
+      if (!waypoints.length) {
+        setRoutePath([])
+        return
       }
 
-      const response = await fetch(
-        "https://routes.googleapis.com/directions/v2:computeRoutes",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Goog-Api-Key": import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-            "X-Goog-FieldMask":
-              "routes.polyline.encodedPolyline,routes.legs.steps.polyline.encodedPolyline",
-          },
-          body: JSON.stringify(body),
-        }
-      )
+      const basePoint = isOutsideChiba(userLocation)
+        ? disasterPoint
+        : userLocation
+      const zoneLabel = getZoneForPoint(basePoint, polygons)
 
-      const data = await response.json()
+      if (zoneLabel == null) {
+        console.warn("Tidak menemukan zona untuk titik awal")
+        setRoutePath([])
+        return
+      }
 
-      if (!active) return
+      const origin = { ...basePoint, zoneLabel }
 
-      const output = data.routes?.[0] || null
+      let fullPath = []
+      let currentPoint = origin
+      let allRoutes = []
 
-      if (output) {
-        let fullPath = []
-        output.legs.forEach((leg) => {
-          leg.steps.forEach((step) => {
-            const stepPath = polyline
-              .decode(step.polyline.encodedPolyline)
-              .map(([lat, lng]) => ({ lat, lng }))
-            fullPath = fullPath.concat(stepPath)
+      for (let i = 0; i < waypoints.length; i++) {
+        const destination = waypoints[i]
+        const fromZone = currentPoint.zoneLabel
+        const toZone = destination.zoneLabel ?? 0
+
+        const routes = await getSegmentRoute(currentPoint, destination)
+        if (!routes) break
+
+        // untuk setiap alternatif
+        routes.forEach((route, altIdx) => {
+          let fullPath = []
+          route.legs.forEach((leg) => {
+            leg.steps.forEach((step) => {
+              const stepPath = polyline
+                .decode(step.polyline.encodedPolyline)
+                .map(([lat, lng]) => ({ lat, lng }))
+              fullPath = fullPath.concat(stepPath)
+            })
+          })
+
+          const dangerScore = countDangerPoints(fullPath, polygons, fromZone)
+
+          // simpan path alternatif ini
+          allRoutes.push({
+            waypointIndex: i,
+            alternativeIndex: altIdx,
+            path: fullPath,
+            dangerScore,
           })
         })
-        setRoutePath(fullPath)
+        currentPoint = destination
       }
+
+      let safestRoute = []
+
+      let route0 = []
+      let route1 = []
+      let route2 = []
+      let route3 = []
+
+      allRoutes.forEach((route) => {
+        if (route.waypointIndex === 0) {
+          route0.push(route)
+        } else if (route.waypointIndex === 1) {
+          route1.push(route)
+        } else if (route.waypointIndex === 2) {
+          route2.push(route)
+        } else {
+          route3.push(route)
+        }
+      })
+
+      const safestRoute0 = route0.reduce((best, r) => {
+        return !best || r.dangerScore < best.dangerScore ? r : best
+      }, null)
+
+      const safestRoute1 = route1.reduce((best, r) => {
+        return !best || r.dangerScore < best.dangerScore ? r : best
+      }, null)
+
+      const safestRoute2 = route2.reduce((best, r) => {
+        return !best || r.dangerScore < best.dangerScore ? r : best
+      }, null)
+
+      const safestRoute3 = route3.reduce((best, r) => {
+        return !best || r.dangerScore < best.dangerScore ? r : best
+      }, null)
+
+      console.log({
+        safestRoute0,
+        safestRoute1,
+        safestRoute2,
+        safestRoute3,
+      })
+
+      safestRoute = [safestRoute0, safestRoute1, safestRoute2, safestRoute3]
+
+      if (active) setRoutePath(safestRoute)
     }
 
-    if (!waypoints.length) {
-      setRoutePath([]) // Logika ini yang seharusnya menghapus polyline
-      return
+    if (
+      waypoints.length > 0 &&
+      userLocation?.lat &&
+      polygons?.length > 0 &&
+      disasterPoint?.lat
+    ) {
+      toast.promise(buildSafeRoute(), {
+        id: "searchingRoute",
+        loading: "Searching for evacuation route...",
+      })
     }
-
-    const origin = isOutsideChiba(userLocation) ? disasterPoint : userLocation
-
-    getRouteWithWaypoints(origin, waypoints)
 
     return () => {
-      active = false // hentikan setState setelah unmount/reset
-      controller.abort() // batalkan fetch
+      active = false
+      controller.abort()
     }
-  }, [waypoints, userLocation])
+  }, [waypoints, userLocation, polygons, disasterPoint])
 
   useEffect(() => {
     if (!shelters.length) return
@@ -635,22 +913,18 @@ function GoogleMaps({ currentLayer, searchResult }) {
           >
             {mapReady && (
               <>
-                {routePath && routePath.length > 0 && layersData.length > 0 && (
+                {routePath.map((r, idx) => (
                   <Polyline
-                    key={
-                      layersData.length > 0
-                        ? "polyline-active"
-                        : "polyline-inactive"
-                    }
-                    path={layersData.length > 0 ? routePath : []}
+                    key={`route-${r.waypointIndex}-${r.alternativeIndex}`}
+                    path={r.path}
                     options={{
-                      strokeColor: "#0000F1",
+                      strokeColor: "#0000F1", // biru = utama, abu = alternatif
                       strokeOpacity: 0.8,
-                      strokeWeight: 5,
-                      zIndex: 9999,
+                      strokeWeight: 4,
+                      zIndex: r.alternativeIndex === 0 ? 9999 : 999,
                     }}
                   />
-                )}
+                ))}
 
                 {polygons.map((poly, i) => {
                   if (poly.type === "Polygon") {
