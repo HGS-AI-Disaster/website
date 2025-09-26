@@ -11,21 +11,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 
 function AccordionLayer({
   layers,
@@ -34,8 +19,6 @@ function AccordionLayer({
   currentDate,
 }) {
   // filter sesuai tanggal
-  console.log("layers", layers)
-  console.log("currentDate", currentDate)
   const filteredLayers = layers.filter(
     (l) => l.visibility === "public" && l.layer_date === currentDate
   )

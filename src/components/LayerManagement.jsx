@@ -1,15 +1,5 @@
-import React, { useEffect, useState } from "react"
+import React, { useState } from "react"
 import { Input } from "./ui/input"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog"
 import {
   Menubar,
   MenubarContent,
@@ -30,7 +20,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown } from "lucide-react"
+import { ArrowDownAZ, ArrowUpDown, TornadoIcon, Waves } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -43,10 +33,8 @@ import AddLayer from "./AddLayer"
 import EditLayer from "./EditLayer"
 import EditVisibility from "./EditVisibility"
 import DeleteLayer from "./DeleteLayer"
-import { getLayers } from "@/supabase/actions/layer"
-import { toast } from "sonner"
 import { useSelector } from "react-redux"
-import { minSize } from "zod"
+import { Badge } from "./ui/badge"
 
 const sortByDate = (rowA, rowB, columnId) => {
   const parseDate = (str) => {
@@ -74,14 +62,33 @@ export const columns = [
             className="hover:bg-gray-200 !p-1 h-fit"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            <ArrowUpDown />
+            <ArrowDownAZ />
           </Button>
         </div>
       )
     },
-    cell: ({ row }) => (
-      <div className="truncate max-w-[360px]">{row.getValue("layer")}</div>
-    ),
+    cell: ({ row }) => {
+      const now = new Date()
+      const date = new Date(row.getValue("created_at"))
+      const diffMs = now - date
+      const diffSec = Math.floor(diffMs / 1000)
+      const diffMin = Math.floor(diffSec / 60)
+
+      return (
+        <div className="truncate max-w-[250px]">
+          {diffMin < 1 && (
+            <Badge
+              className={
+                "bg-green-50 border border-green-200 text-green-500 px-2 me-2"
+              }
+            >
+              new
+            </Badge>
+          )}
+          {row.getValue("layer")}
+        </div>
+      )
+    },
   },
   {
     accessorKey: "category",
@@ -94,12 +101,115 @@ export const columns = [
             className="hover:bg-gray-200 !p-1 h-fit"
             onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
           >
-            <ArrowUpDown />
+            <ArrowDownAZ />
           </Button>
         </div>
       )
     },
-    cell: ({ row }) => <div>{row.getValue("category")}</div>,
+    cell: ({ row }) => {
+      const category = row.getValue("category")
+      switch (category) {
+        case "Flood":
+          return (
+            <Badge
+              className={
+                "bg-yellow-50 text-yellow-500 border border-yellow-200"
+              }
+            >
+              <Waves strokeWidth={2} />
+              Flood
+            </Badge>
+          )
+        case "Heavy Rain":
+          return (
+            <Badge
+              className={"bg-blue-50 text-blue-500 border border-blue-200"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                className="bi bi-cloud-rain-heavy-fill me-0.5"
+                viewBox="0 0 16 16"
+              >
+                <path d="M4.176 11.032a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m3 0a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m3 0a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m3 0a.5.5 0 0 1 .292.643l-1.5 4a.5.5 0 0 1-.936-.35l1.5-4a.5.5 0 0 1 .644-.293m.229-7.005a5.001 5.001 0 0 0-9.499-1.004A3.5 3.5 0 1 0 3.5 10H13a3 3 0 0 0 .405-5.973" />
+              </svg>
+              Heavy Rain
+            </Badge>
+          )
+        case "Typhoon":
+          return (
+            <Badge
+              className={
+                "bg-fuchsia-50 text-fuchsia-500 border border-fuchsia-200"
+              }
+            >
+              <TornadoIcon strokeWidth={2} />
+              Typhoon
+            </Badge>
+          )
+        case "Earthquake":
+          return (
+            <Badge
+              className={"bg-green-50 text-green-500 border border-green-200"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                className="bi bi-activity me-0.5"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M6 2a.5.5 0 0 1 .47.33L10 12.036l1.53-4.208A.5.5 0 0 1 12 7.5h3.5a.5.5 0 0 1 0 1h-3.15l-1.88 5.17a.5.5 0 0 1-.94 0L6 3.964 4.47 8.171A.5.5 0 0 1 4 8.5H.5a.5.5 0 0 1 0-1h3.15l1.88-5.17A.5.5 0 0 1 6 2"
+                />
+              </svg>
+              Earthquake
+            </Badge>
+          )
+        case "Cloud":
+          return (
+            <Badge
+              className={
+                "bg-orange-50 text-orange-500 border border-orange-200"
+              }
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                className="bi bi-cloud-fill me-0.5"
+                viewBox="0 0 16 16"
+              >
+                <path d="M4.406 3.342A5.53 5.53 0 0 1 8 2c2.69 0 4.923 2 5.166 4.579C14.758 6.804 16 8.137 16 9.773 16 11.569 14.502 13 12.687 13H3.781C1.708 13 0 11.366 0 9.318c0-1.763 1.266-3.223 2.942-3.593.143-.863.698-1.723 1.464-2.383" />
+              </svg>
+              Cloud
+            </Badge>
+          )
+        default:
+          return (
+            <Badge
+              className={"bg-gray-50 text-gray-500 border border-gray-200"}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                className="bi bi-building-fill me-0.5"
+                viewBox="0 0 16 16"
+              >
+                <path d="M3 0a1 1 0 0 0-1 1v14a1 1 0 0 0 1 1h3v-3.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 .5.5V16h3a1 1 0 0 0 1-1V1a1 1 0 0 0-1-1zm1 2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5M4 5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM7.5 5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zM4.5 8h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5m2.5.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5zm3.5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-1a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5" />
+              </svg>
+              {category}
+            </Badge>
+          )
+      }
+    },
   },
   {
     accessorKey: "layer_date",
@@ -117,7 +227,15 @@ export const columns = [
       </div>
     ),
     cell: ({ row }) => {
-      return <div>{row.getValue("layer_date")}</div>
+      return (
+        <div>
+          {new Date(row.getValue("layer_date")).toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })}
+        </div>
+      )
     },
   },
   {
@@ -136,7 +254,42 @@ export const columns = [
       </div>
     ),
     cell: ({ row }) => {
-      return <div>{row.getValue("created_at").slice(0, 10)}</div>
+      function timeAgo(isoString) {
+        const now = new Date()
+        const date = new Date(isoString)
+
+        const diffMs = now - date // selisih dalam ms
+        const diffSec = Math.floor(diffMs / 1000)
+        const diffMin = Math.floor(diffSec / 60)
+        const diffHour = Math.floor(diffMin / 60)
+        const diffDay = Math.floor(diffHour / 24)
+
+        if (diffSec < 60) {
+          return "Just now"
+        } else if (diffMin === 1) {
+          return "1 minute ago"
+        } else if (diffMin < 60) {
+          return `${diffMin} minutes ago`
+        } else if (diffHour === 1) {
+          return "1 hour ago"
+        } else if (diffHour < 24) {
+          return `${diffHour} hours ago`
+        } else if (diffDay === 1) {
+          return "1 day ago"
+        } else if (diffDay < 7) {
+          return `${diffDay} days ago`
+        } else {
+          // Lewat dari 1 minggu → tampilkan date pretty
+          return date.toLocaleDateString("en-US", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          })
+          // contoh output: "18 Sep 2025"
+        }
+      }
+
+      return <div>{timeAgo(row.getValue("created_at"))}</div>
     },
   },
   {
@@ -149,7 +302,7 @@ export const columns = [
           className="hover:bg-gray-200 !p-1 h-fit"
           onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
         >
-          <ArrowUpDown />
+          <ArrowDownAZ />
         </Button>
       </div>
     ),
@@ -432,7 +585,7 @@ function LayerManagement() {
                       {row.getVisibleCells().map((cell) => (
                         <TableCell
                           key={cell.id}
-                          className={`text-sm ${
+                          className={`text-sm py-4 ${
                             cell.id === "layer" ? "w-[370px]" : ""
                           }`}
                         >

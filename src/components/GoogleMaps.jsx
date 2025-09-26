@@ -16,7 +16,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { MarkerClusterer } from "@react-google-maps/api"
-import { useRef, useState, useCallback, useEffect } from "react"
+import React, { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "./ui/button"
 import {
   Dot,
@@ -36,7 +36,8 @@ import {
 } from "@/components/ui/hover-card"
 import { toast } from "sonner"
 import { useSelector } from "react-redux"
-import { marker } from "leaflet"
+import { marker, point } from "leaflet"
+import CustomPopup from "./CustomPopup"
 
 const containerStyle = {
   width: "100%",
@@ -89,6 +90,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [disasterPoint, setDisasterPoint] = useState({})
   const [userLocation, setUserLocation] = useState({})
   const [mapCenter, setMapCenter] = useState(center) // default center
+  const [redRoute, setRedRoute] = useState([])
+  const [popup, setPopup] = useState(null)
   // const [userLocation, setUserLocation] = useState({
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
@@ -116,6 +119,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
             lat: position.coords.latitude,
             lng: position.coords.longitude,
           }
+
+          // const pos = {
+          //   lat: 35.45456754343619,
+          //   lng: 139.96284726653911,
+          // }
 
           setUserLocation(pos)
 
@@ -254,6 +262,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
             lng: position.coords.longitude,
           }
 
+          // const pos = {
+          //   lat: 35.45456754343619,
+          //   lng: 139.96284726653911,
+          // }
+
           const isSameLocation = (a, b) => a.lat === b.lat && a.lng === b.lng
 
           if (!isSameLocation(userLocation, pos)) {
@@ -304,40 +317,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       default:
         return "#9e9e9e" // abu
     }
-  }
-
-  function isRouteSafe(encodedPolyline, polygons, fromZone, toZone) {
-    const decoded = polyline
-      .decode(encodedPolyline)
-      .map(([lat, lng]) => [lng, lat])
-
-    return !decoded.some((coord) => {
-      return polygons.some((poly) => {
-        const zone = Number(poly.label)
-
-        if (toZone < fromZone) {
-          // turun ke zona lebih aman → boleh lewat zona asal, tapi tidak boleh > fromZone
-          if (zone > fromZone) {
-            const geom =
-              poly.type === "Polygon"
-                ? turf.polygon(poly.coordinates)
-                : turf.multiPolygon(poly.coordinates)
-            return turf.booleanPointInPolygon(turf.point(coord), geom)
-          }
-        } else {
-          // kalau tujuan sama/lebih tinggi (lebih berbahaya) → tidak boleh lewat zona lebih tinggi dari tujuan
-          if (zone > toZone) {
-            const geom =
-              poly.type === "Polygon"
-                ? turf.polygon(poly.coordinates)
-                : turf.multiPolygon(poly.coordinates)
-            return turf.booleanPointInPolygon(turf.point(coord), geom)
-          }
-        }
-
-        return false
-      })
-    })
   }
 
   async function getSegmentRoute(origin, destination) {
@@ -490,113 +469,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
     return routeSteps
   }
 
-  // async function planEvacuationRoute(userLoc, shelters, polygons, id) {
-  //   const startPoint =
-  //     isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
-
-  //   let currentPoint = startPoint
-  //   const startingPoint = turf.point([currentPoint.lng, currentPoint.lat])
-  //   let currentZone = null
-
-  //   polygons.forEach((poly) => {
-  //     let geom
-  //     if (poly.type === "Polygon") {
-  //       geom = turf.polygon(poly.coordinates)
-  //     } else if (poly.type === "MultiPolygon") {
-  //       geom = turf.multiPolygon(poly.coordinates)
-  //     }
-  //     if (turf.booleanPointInPolygon(startingPoint, geom)) {
-  //       currentZone = poly.label
-  //     }
-  //   })
-
-  //   if (currentZone == null) return []
-
-  //   let routeSteps = []
-
-  //   while (currentZone >= 0) {
-  //     let candidates = shelters.filter(
-  //       (h) =>
-  //         h.properties.zoneLabel !== null &&
-  //         h.properties.zoneLabel <= currentZone
-  //     )
-
-  //     if (id) {
-  //       candidates = candidates.filter((h) => h.properties.id != id)
-  //     }
-  //     if (!candidates.length) break
-
-  //     // urutkan kandidat dari terdekat
-  //     candidates.sort((a, b) => {
-  //       const d1 = turf.distance(
-  //         turf.point([currentPoint.lng, currentPoint.lat]),
-  //         turf.point([a.geometry.coordinates[0], a.geometry.coordinates[1]])
-  //       )
-  //       const d2 = turf.distance(
-  //         turf.point([currentPoint.lng, currentPoint.lat]),
-  //         turf.point([b.geometry.coordinates[0], b.geometry.coordinates[1]])
-  //       )
-  //       return d1 - d2
-  //     })
-
-  //     let nearest = null
-
-  //     // cek rute satu per satu
-  //     for (const cand of candidates) {
-  //       try {
-  //         const routeData = await fetchRoute(currentPoint, {
-  //           lng: cand.geometry.coordinates[0],
-  //           lat: cand.geometry.coordinates[1],
-  //         })
-  //         const path = polyline
-  //           .decode(routeData.routes[0].geometry, 5)
-  //           .map(([lat, lng]) => ({ lat, lng }))
-
-  //         const safe = isRouteSafe(
-  //           path,
-  //           polygons,
-  //           currentZone,
-  //           cand.properties.zoneLabel
-  //         )
-  //         if (safe) {
-  //           nearest = cand
-  //           break
-  //         }
-  //       } catch (err) {
-  //         console.error("Error checking candidate route:", err)
-  //       }
-  //     }
-
-  //     if (!nearest) break
-
-  //     routeSteps.push({
-  //       lng: nearest.geometry.coordinates[0],
-  //       lat: nearest.geometry.coordinates[1],
-  //       zoneLabel: nearest.properties.zoneLabel,
-  //       id: nearest.properties.id,
-  //     })
-
-  //     currentPoint = {
-  //       lng: nearest.geometry.coordinates[0],
-  //       lat: nearest.geometry.coordinates[1],
-  //     }
-  //     currentZone = nearest.properties.zoneLabel - 1
-  //   }
-
-  //   const markers = shelters.filter((f) =>
-  //     routeSteps.some(
-  //       (wp) =>
-  //         wp.lat === f.geometry.coordinates[1] &&
-  //         wp.lng === f.geometry.coordinates[0]
-  //     )
-  //   )
-
-  //   setWaypoints(routeSteps)
-  //   setWaypointMarkers(markers)
-
-  //   return routeSteps
-  // }
-
   useEffect(() => {
     console.log({ waypoints })
   }, [waypoints])
@@ -654,12 +526,54 @@ function GoogleMaps({ currentLayer, searchResult }) {
         if (turf.booleanPointInPolygon(point, geom)) {
           if (poly.label > fromZone) {
             dangerCount++
+            setRedRoute((r) => [
+              ...r,
+              { lng: coordinate.lng, lat: coordinate.lat },
+            ])
           }
         }
       })
     })
 
     return dangerCount
+  }
+
+  function extractDangerSegments(path, polygons, fromZone) {
+    let redSegments = []
+    let currentSegment = []
+
+    path.forEach((coordinate) => {
+      const point = turf.point([coordinate.lng, coordinate.lat])
+      let isDanger = false
+
+      polygons.forEach((poly) => {
+        let geom =
+          poly.type === "Polygon"
+            ? turf.polygon(poly.coordinates)
+            : turf.multiPolygon(poly.coordinates)
+
+        if (turf.booleanPointInPolygon(point, geom)) {
+          if (poly.label > fromZone) {
+            isDanger = true
+          }
+        }
+      })
+
+      if (isDanger) {
+        currentSegment.push(coordinate)
+      } else {
+        if (currentSegment.length > 0) {
+          redSegments.push(currentSegment)
+          currentSegment = []
+        }
+      }
+    })
+
+    if (currentSegment.length > 0) {
+      redSegments.push(currentSegment)
+    }
+
+    return redSegments
   }
 
   useEffect(() => {
@@ -711,12 +625,19 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
           const dangerScore = countDangerPoints(fullPath, polygons, fromZone)
 
-          // simpan path alternatif ini
+          // cari segmen merah
+          const redSegments = extractDangerSegments(
+            fullPath,
+            polygons,
+            fromZone
+          )
+
           allRoutes.push({
             waypointIndex: i,
             alternativeIndex: altIdx,
             path: fullPath,
             dangerScore,
+            redSegments,
           })
         })
         currentPoint = destination
@@ -757,13 +678,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
         return !best || r.dangerScore < best.dangerScore ? r : best
       }, null)
 
-      console.log({
-        safestRoute0,
-        safestRoute1,
-        safestRoute2,
-        safestRoute3,
-      })
-
       safestRoute = [safestRoute0, safestRoute1, safestRoute2, safestRoute3]
 
       if (active) setRoutePath(safestRoute)
@@ -778,6 +692,9 @@ function GoogleMaps({ currentLayer, searchResult }) {
       toast.promise(buildSafeRoute(), {
         id: "searchingRoute",
         loading: "Searching for evacuation route...",
+        error:
+          "We’re having trouble loading the route. Please check your internet connection and try again.",
+        duration: 20000,
       })
     }
 
@@ -786,6 +703,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
       controller.abort()
     }
   }, [waypoints, userLocation, polygons, disasterPoint])
+
+  useEffect(() => {
+    console.log({ redRoute })
+  }, [redRoute])
 
   useEffect(() => {
     if (!shelters.length) return
@@ -913,18 +834,41 @@ function GoogleMaps({ currentLayer, searchResult }) {
           >
             {mapReady && (
               <>
-                {routePath.map((r, idx) => (
-                  <Polyline
-                    key={`route-${r.waypointIndex}-${r.alternativeIndex}`}
-                    path={r.path}
-                    options={{
-                      strokeColor: "#0000F1", // biru = utama, abu = alternatif
-                      strokeOpacity: 0.8,
-                      strokeWeight: 4,
-                      zIndex: r.alternativeIndex === 0 ? 9999 : 999,
-                    }}
-                  />
-                ))}
+                {routePath?.length &&
+                  routePath.map((r) => (
+                    <React.Fragment
+                      key={`route-${r?.waypointIndex}-${r?.alternativeIndex}`}
+                    >
+                      <Polyline
+                        path={r?.path}
+                        options={{
+                          strokeColor: "#0000F1", // biru utama
+                          strokeOpacity: 1,
+                          strokeWeight: 4,
+                          zIndex: 999,
+                        }}
+                      />
+                      {r?.redSegments?.map((seg, idx) => (
+                        <Polyline
+                          key={`red-${r?.waypointIndex}-${idx}`}
+                          path={seg}
+                          options={{
+                            strokeColor: "#FF0000",
+                            strokeOpacity: 1,
+                            strokeWeight: 5,
+                            zIndex: 1000,
+                          }}
+                          onMouseOver={(e) => {
+                            setPopup({
+                              position: e.latLng.toJSON(),
+                              text: "⚠️ This section passes through a higher-risk area.",
+                            })
+                          }}
+                          onMouseOut={() => setPopup(null)}
+                        />
+                      ))}
+                    </React.Fragment>
+                  ))}
 
                 {polygons.map((poly, i) => {
                   if (poly.type === "Polygon") {
@@ -940,6 +884,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                           strokeWeight: 0,
                           strokeColor: "#F0F0F0",
                           fillOpacity: 0.6,
+                          clickable: false,
                         }}
                       />
                     )
@@ -953,6 +898,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                           strokeWeight: 0,
                           strokeColor: "#F0F0F0",
                           fillOpacity: 0.6,
+                          clickable: false,
                         }}
                       />
                     ))
@@ -967,17 +913,30 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     <Marker
                       key={`waypoint-${i}`}
                       position={{ lat, lng }}
-                      title={
-                        `${f.properties?.name} (Click to see details)` ||
-                        "Evacuation Shelter (Click to see details)"
-                      }
                       onClick={() => {
                         setSelectedShelter(f)
                         setDialogIsOpen(true)
                       }}
+                      onMouseOver={(e) => {
+                        setPopup({
+                          title: `Nearest Evacuation Point`,
+                          position: e.latLng.toJSON(),
+                          text: `${f.properties.name} (click to see details)`,
+                        })
+                      }}
+                      onMouseOut={() => setPopup(null)}
                     />
                   )
                 })}
+
+                {popup && (
+                  <CustomPopup
+                    title={popup.title}
+                    position={popup.position}
+                    text={popup.text}
+                    onClose={() => setPopup(null)}
+                  />
+                )}
 
                 {clusters.map((cluster, i) => {
                   const [lng, lat] = cluster.geometry.coordinates
@@ -1013,6 +972,16 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     )
                   }
 
+                  // cek apakah shelter ini ada di waypointMarkers
+                  const isWaypoint = waypointMarkers.some(
+                    (w) => w.properties.id === cluster.properties.shelterId
+                  )
+
+                  // kalau dia waypoint → jangan render marker
+                  if (isWaypoint) {
+                    return null
+                  }
+
                   // render single marker
                   return (
                     <Marker
@@ -1023,10 +992,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
                         scaledSize: new window.google.maps.Size(32, 32),
                         anchor: new window.google.maps.Point(16, 32),
                       }}
-                      title={
-                        `${cluster.properties.name} (Click to see details)` ||
-                        "Evacuation Shelter (Click to see details)"
-                      }
                       onClick={() => {
                         setSelectedShelter({
                           properties: cluster.properties,
@@ -1034,6 +999,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
                         })
                         setDialogIsOpen(true)
                       }}
+                      onMouseOver={(e) => {
+                        setPopup({
+                          position: e.latLng.toJSON(),
+                          text:
+                            `${cluster.properties.name}  (Click to see details)` ||
+                            "Evacuation Shelter (Click to see details)",
+                        })
+                      }}
+                      onMouseOut={() => setPopup(null)}
                     />
                   )
                 })}
@@ -1070,7 +1044,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                   </OverlayView>
                 )}
 
-                {/* Titik gempa */}
+                {/* Titik bencana */}
                 {disasterPoint.lat && (
                   <OverlayView
                     position={disasterPoint}

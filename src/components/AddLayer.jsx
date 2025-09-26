@@ -21,8 +21,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { useForm, Controller } from "react-hook-form"
 import { useState } from "react"
 import { toast } from "sonner"
-import { supabase } from "@/supabase"
-import { addLayer, getLayers } from "@/supabase/actions/layer"
+import { addLayer } from "@/supabase/actions/layer"
 
 export default function AddLayer() {
   const {

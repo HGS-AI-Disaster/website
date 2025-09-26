@@ -2,9 +2,6 @@ import React, { useEffect, useState } from "react"
 import { useJsApiLoader } from "@react-google-maps/api"
 import GoogleMaps from "./GoogleMaps"
 import Navigation from "./Navigation"
-import { getLayers, getPublicLayers } from "@/supabase/actions/layer"
-import { toast } from "sonner"
-import { data } from "react-router-dom"
 import { useSelector } from "react-redux"
 
 const libraries = ["places", "visualization"]
