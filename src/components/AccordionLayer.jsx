@@ -39,6 +39,8 @@ function AccordionLayer({
     "Chiba University",
   ]
 
+  console.log({ currentLayer })
+
   return filteredLayers.length ? (
     <div className="layers relative flex-1 m-8 z-20">
       <Accordion
@@ -77,43 +79,62 @@ function AccordionLayer({
                             {cat}
                           </AccordionTrigger>
                           <AccordionContent className="flex pb-0 flex-col max-h-50 overflow-y-auto w-full">
-                            {catLayers.map((layer, index) => (
-                              <Tooltip
-                                key={index}
-                                delayDuration={400}
-                                skipDelayDuration={500}
-                              >
-                                <TooltipTrigger
-                                  onClick={() => {
-                                    setCurrentLayer(layer)
-                                  }}
-                                  className="cursor-default"
+                            {catLayers.map((layer, index) => {
+                              const isoString = layer.created_at
+                              const date = new Date(isoString)
+
+                              const timeString = date.toLocaleTimeString(
+                                "en-US",
+                                {
+                                  timeZone: "Asia/Tokyo",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                }
+                              )
+
+                              return (
+                                <Tooltip
+                                  key={index}
+                                  delayDuration={400}
+                                  skipDelayDuration={500}
                                 >
-                                  <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100 w-full">
-                                    <div className="text-left ps-8 truncate w-full">
-                                      {layer.layer}
-                                    </div>
-                                    {currentLayer?.id === layer.id && (
+                                  <TooltipTrigger
+                                    onClick={() => {
+                                      setCurrentLayer(layer)
+                                    }}
+                                    className="cursor-default"
+                                  >
+                                    <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100 w-full">
+                                      <div
+                                        className={`text-left ps-8 truncate w-full ${
+                                          currentLayer?.id === layer.id
+                                            ? "text-gray-600"
+                                            : "text-black"
+                                        }`}
+                                      >
+                                        {layer.layer}
+                                      </div>
+
                                       <Badge
                                         variant={"outline"}
-                                        className="text-[10px] text-gray-500 px-1 me-6"
+                                        className="text-[10px] text-gray-500 px-1"
                                       >
-                                        active
+                                        {timeString}
                                       </Badge>
-                                    )}
-                                  </div>
-                                </TooltipTrigger>
-                                {layer.layer.length > 16 ||
-                                (layer.layer.length > 10 &&
-                                  currentLayer?.layer === layer.layer) ? (
+                                    </div>
+                                  </TooltipTrigger>
+
                                   <TooltipContent>
-                                    <p>{layer.layer}</p>
+                                    <p>
+                                      {layer.layer}{" "}
+                                      {currentLayer?.id === layer.id &&
+                                        "(active)"}
+                                    </p>
                                   </TooltipContent>
-                                ) : (
-                                  ""
-                                )}
-                              </Tooltip>
-                            ))}
+                                </Tooltip>
+                              )
+                            })}
                           </AccordionContent>
                         </AccordionItem>
                       ) : null

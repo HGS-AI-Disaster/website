@@ -179,7 +179,7 @@ export const deleteLayer = async (id) => {
 
   const { error: fileError } = await supabase.storage
     .from("layers")
-    .remove([data.file_url.split("/").pop()])
+    .remove([data?.file_url?.split("/").pop()])
 
   if (fileError) {
     console.error(fileError)
@@ -188,7 +188,7 @@ export const deleteLayer = async (id) => {
 
   const { error: processedError } = await supabase.storage
     .from("layers")
-    .remove([`processed/${data.processed_url.split("/").pop()}`])
+    .remove([`processed/${data?.processed_url?.split("/").pop()}`])
 
   if (processedError) {
     console.error(processedError)

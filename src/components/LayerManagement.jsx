@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { Input } from "./ui/input"
 import {
   Menubar,
@@ -20,7 +20,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowDownAZ, ArrowUpDown, TornadoIcon, Waves } from "lucide-react"
+import { ArrowDownAZ, ArrowUpDown, TornadoIcon, Waves, X } from "lucide-react"
 import {
   Table,
   TableBody,
@@ -79,7 +79,7 @@ export const columns = [
           {diffMin < 1 && (
             <Badge
               className={
-                "bg-green-50 border border-green-200 text-green-500 px-2 me-2"
+                "bg-blue-50 border border-blue-200 text-blue-500 px-2 me-2"
               }
             >
               new
@@ -123,7 +123,7 @@ export const columns = [
         case "Heavy Rain":
           return (
             <Badge
-              className={"bg-blue-50 text-blue-500 border border-blue-200"}
+              className={"bg-pink-50 text-pink-500 border border-pink-200"}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -280,11 +280,16 @@ export const columns = [
           return `${diffDay} days ago`
         } else {
           // Lewat dari 1 minggu → tampilkan date pretty
-          return date.toLocaleDateString("en-US", {
+          return `${date.toLocaleDateString("en-US", {
             day: "numeric",
             month: "short",
             year: "numeric",
-          })
+          })} at ${date.toLocaleTimeString("en-US", {
+            timeZone: "Asia/Tokyo",
+            hour: "numeric",
+            minute: "2-digit",
+            hour12: true,
+          })}`
           // contoh output: "18 Sep 2025"
         }
       }
@@ -359,8 +364,22 @@ function LayerManagement() {
     },
   })
 
+  useEffect(() => {
+    console.log({ columnFilters })
+  }, [columnFilters])
+
   const getUniqueValues = (raw, key) => {
-    return [...new Set(raw.map((item) => item[key]))]
+    return [
+      ...new Set(
+        raw.map((item) => {
+          if (key === "created_at" && item[key]) {
+            // potong ISO string agar hanya ambil tanggal
+            return item[key].split("T")[0]
+          }
+          return item[key]
+        })
+      ),
+    ]
   }
 
   return (
@@ -383,7 +402,6 @@ function LayerManagement() {
             <Menubar>
               <MenubarMenu>
                 <MenubarTrigger>Filter</MenubarTrigger>
-
                 <MenubarContent>
                   <MenubarItem onClick={() => table.setColumnFilters([])}>
                     View All
@@ -449,19 +467,30 @@ function LayerManagement() {
                       </MenubarItem>
                       <MenubarSeparator />
                       {getUniqueValues(layersData, "layer_date").map(
-                        (value) => (
-                          <MenubarItem
-                            key={value}
-                            onClick={() => {
-                              table.setColumnFilters([])
-                              table
-                                .getColumn("layer_date")
-                                ?.setFilterValue(value)
-                            }}
-                          >
-                            {value}
-                          </MenubarItem>
-                        )
+                        (value) => {
+                          const date = new Date(value)
+
+                          const dateString = date.toLocaleDateString("en-US", {
+                            timeZone: "Asia/Tokyo",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+
+                          return (
+                            <MenubarItem
+                              key={value}
+                              onClick={() => {
+                                table.setColumnFilters([])
+                                table
+                                  .getColumn("layer_date")
+                                  ?.setFilterValue(value)
+                              }}
+                            >
+                              {dateString}
+                            </MenubarItem>
+                          )
+                        }
                       )}
                     </MenubarSubContent>
                   </MenubarSub>
@@ -473,22 +502,30 @@ function LayerManagement() {
                       </MenubarItem>
                       <MenubarSeparator />
                       {getUniqueValues(layersData, "created_at").map(
-                        (value) => (
-                          <MenubarItem
-                            key={value}
-                            onClick={() => {
-                              table.setColumnFilters([])
-                              table
-                                .getColumn("created_at")
-                                ?.setFilterValue(value)
-                            }}
-                          >
-                            {value.slice(0, 10)}
-                            <span className="text-xs text-gray-500">
-                              at {value.slice(11, 16)}
-                            </span>
-                          </MenubarItem>
-                        )
+                        (value) => {
+                          const date = new Date(value)
+
+                          const dateString = date.toLocaleDateString("en-US", {
+                            timeZone: "Asia/Tokyo",
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })
+
+                          return (
+                            <MenubarItem
+                              key={value}
+                              onClick={() => {
+                                table.setColumnFilters([])
+                                table
+                                  .getColumn("created_at")
+                                  ?.setFilterValue(value)
+                              }}
+                            >
+                              {dateString}
+                            </MenubarItem>
+                          )
+                        }
                       )}
                     </MenubarSubContent>
                   </MenubarSub>
@@ -511,7 +548,7 @@ function LayerManagement() {
                             table.getColumn("source")?.setFilterValue(value)
                           }}
                         >
-                          {value}
+                          {value[0].toUpperCase() + value.slice(1)}
                         </MenubarItem>
                       ))}
                     </MenubarSubContent>
@@ -535,7 +572,7 @@ function LayerManagement() {
                                   ?.setFilterValue(value)
                               }}
                             >
-                              {value}
+                              {value[0].toUpperCase() + value.slice(1)}
                             </MenubarItem>
                           )
                         )}
@@ -547,8 +584,57 @@ function LayerManagement() {
             <AddLayer />
           </div>
         </div>
-        <div className="table w-full">
-          <div className="overflow-hidden rounded-md border mt-8">
+        <div className="active-filter-info mt-8 flex flex-wrap items-center gap-3">
+          {columnFilters.length > 0
+            ? columnFilters.map((filter) => {
+                const col = table.getColumn(filter.id)
+                const value = filter.value
+
+                // Format tanggal agar rapi jika key = created_at / layer_date
+                let formattedValue = value
+                if (filter.id === "created_at" || filter.id === "layer_date") {
+                  const date = new Date(value)
+                  formattedValue = date.toLocaleDateString("en-US", {
+                    timeZone: "Asia/Tokyo",
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })
+                }
+
+                let filterName = "Filter"
+                if (filter.id === "created_at") {
+                  filterName = "Uploaded at"
+                } else if (filter.id === "layer_date") {
+                  filterName = "Layer date"
+                } else {
+                  filterName = filter.id[0].toUpperCase() + filter.id.slice(1)
+                }
+
+                return (
+                  <div className="flex items-center gap-2">
+                    <div className="text-gray-400">{filterName} :</div>
+                    <Button
+                      key={filter.id}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                      onClick={() => col?.setFilterValue("")} // klik X -> hapus filter
+                    >
+                      <div>{formattedValue}</div>
+                      <X
+                        size={14}
+                        color="grey"
+                      />
+                    </Button>
+                  </div>
+                )
+              })
+            : ""}
+        </div>
+
+        <div className="table w-full mt-4">
+          <div className="overflow-hidden rounded-md border">
             <Table>
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => {

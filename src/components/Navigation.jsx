@@ -33,6 +33,7 @@ function Navigation({
 
   const onPlaceChanged = () => {
     if (autocomplete) {
+      console.log("Pencarian ketemu")
       const place = autocomplete.getPlace()
       if (place.geometry) {
         const location = place.geometry.location

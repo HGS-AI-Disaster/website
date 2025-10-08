@@ -51,8 +51,10 @@ export default function AddLayer() {
         duration: 15000,
       }),
       error: (err) => ({
-        message: "Error",
-        description: err.message || "Failed to create layer",
+        message: "Failed to create layer",
+        description:
+          `${err.message}. Please check your internet connection.` ||
+          "Please check your internet connection.",
       }),
     })
 
@@ -103,7 +105,7 @@ export default function AddLayer() {
               htmlFor="file"
               className="cursor-pointer block"
             >
-              Upload file GeoJSON
+              Upload GeoJSON file
             </Label>
             <Controller
               name="file"

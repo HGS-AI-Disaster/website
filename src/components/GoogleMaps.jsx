@@ -57,7 +57,10 @@ function geoJsonToPolygons(geojson) {
 
   const handleFeature = (feature) => {
     polygons.push({
-      label: feature.properties?.Label || "default",
+      label:
+        feature.properties?.composite_risk_class ||
+        feature.properties?.Label ||
+        "default",
       type: feature.geometry.type,
       coordinates: feature.geometry.coordinates,
     })
@@ -156,9 +159,14 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
-    if (disasterPoint.lat) {
-      getCurrentLocation()
-    }
+    setMapCenter(searchResult)
+  }, [searchResult])
+
+  useEffect(() => {
+    // if (disasterPoint.lat) {
+    console.log(disasterPoint)
+    getCurrentLocation()
+    // }
   }, [disasterPoint])
 
   useEffect(() => {
@@ -227,6 +235,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
             lng: polyFeatures[0].properties.Longitude,
           }
 
+          console.log({ disasterPoint: disasterCenter })
+
           setDisasterPoint(disasterCenter)
 
           const polygonsData = geoJsonToPolygons(dissolved)
@@ -257,15 +267,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const pos = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          }
-
           // const pos = {
-          //   lat: 35.45456754343619,
-          //   lng: 139.96284726653911,
+          //   lat: position.coords.latitude,
+          //   lng: position.coords.longitude,
           // }
+
+          const pos = {
+            lat: 35.45456754343619,
+            lng: 139.96284726653911,
+          }
 
           const isSameLocation = (a, b) => a.lat === b.lat && a.lng === b.lng
 
@@ -332,6 +342,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
       travelMode: "DRIVE",
       routingPreference: "TRAFFIC_AWARE_OPTIMAL",
       computeAlternativeRoutes: true,
+      routeModifiers: {
+        avoidHighways: false,
+        avoidTolls: false,
+        avoidFerries: true,
+      },
     }
 
     const response = await fetch(
@@ -463,6 +478,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       )
     )
 
+    console.log(routeSteps)
     setWaypoints(routeSteps)
     setWaypointMarkers(markers)
 
@@ -822,11 +838,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
           </Dialog>
           <GoogleMap
             mapContainerStyle={containerStyle}
-            center={mapCenter} // ganti dari disasterPoint
+            center={mapCenter}
             zoom={12}
             options={{
               disableDefaultUI: true,
-              gestureHandling: "greedy",
+              gestureHandling: "cooperative",
               mapTypeId: "hybrid",
             }}
             onLoad={onLoad}
@@ -1077,7 +1093,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                 {searchResult && (
                   <Marker
                     position={searchResult}
-                    title="Hasil Pencarian"
+                    title="Search result"
                   />
                 )}
               </>

@@ -42,7 +42,6 @@ import {
   SelectValue,
 } from "./ui/select"
 import { useDispatch, useSelector } from "react-redux"
-import { toast } from "sonner"
 import { updateProfile, logout } from "@/supabase/actions/auth"
 
 function Profile() {
@@ -196,28 +195,17 @@ function Profile() {
             <div className="">
               <DialogTitle className="flex gap-1">
                 <div className="">{data.profile?.username || ""}</div>
+              </DialogTitle>
+              <DialogDescription>
+                <span className="email text-gray-500 my-1 block">
+                  {data.user?.email}
+                </span>
                 <Badge
                   variant={"outline"}
                   className={"text-[12px] text-green-400 border-green-200"}
                 >
                   {data.profile?.role}
                 </Badge>
-              </DialogTitle>
-              <DialogDescription>
-                <span className="email text-gray-500 my-1 block">
-                  {data.user?.email}
-                </span>
-                <Button
-                  variant="outline"
-                  size="xs"
-                  className="text-[12px] text-black px-2 py-1"
-                >
-                  <Layers
-                    size={16}
-                    color="grey"
-                  />
-                  0 layer added
-                </Button>
               </DialogDescription>
             </div>
           </div>
