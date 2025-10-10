@@ -22,6 +22,7 @@ import {
   Dot,
   LocateFixed,
   Navigation2,
+  Route,
   TriangleAlert,
   Users,
   ZoomIn,
@@ -95,6 +96,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [mapCenter, setMapCenter] = useState(center) // default center
   const [redRoute, setRedRoute] = useState([])
   const [popup, setPopup] = useState(null)
+  const [hospitalMarkers, setHospitalMarkers] = useState([])
   // const [userLocation, setUserLocation] = useState({
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
@@ -112,6 +114,49 @@ function GoogleMaps({ currentLayer, searchResult }) {
       point.lng < minLng ||
       point.lng > maxLng
     )
+  }
+
+  const findNearbyHospitals = async () => {
+    try {
+      // get user location
+      const position = await new Promise((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject)
+      )
+
+      const userLoc = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      }
+
+      // fetch hospital data
+      const geojson = await fetchGeoJSON(
+        import.meta.env.VITE_SUPABASE_MAIN_HOSPITALS_URL
+      )
+      const hospitals = geojson.features.map((f) => ({
+        name: f.properties.name,
+        lat: f.geometry.coordinates[1],
+        lng: f.geometry.coordinates[0],
+      }))
+
+      // check if inside chiba
+      const insideChiba = !isOutsideChiba(userLoc)
+
+      const shown = insideChiba
+        ? getNearestHospitals(userLoc, hospitals, 3)
+        : hospitals
+
+      setMarkers(shown)
+
+      // center map
+      mapRef.current.panTo(userLoc)
+      new window.google.maps.Marker({
+        map: mapRef.current,
+        position: userLoc,
+        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+      })
+    } catch (err) {
+      console.error("Error finding hospitals:", err)
+    }
   }
 
   function getCurrentLocation() {
@@ -164,7 +209,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     // if (disasterPoint.lat) {
-    console.log(disasterPoint)
+
     getCurrentLocation()
     // }
   }, [disasterPoint])
@@ -478,16 +523,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
       )
     )
 
-    console.log(routeSteps)
     setWaypoints(routeSteps)
     setWaypointMarkers(markers)
 
     return routeSteps
   }
-
-  useEffect(() => {
-    console.log({ waypoints })
-  }, [waypoints])
 
   useEffect(() => {
     // kalau salah satu kosong langsung reset
@@ -719,10 +759,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       controller.abort()
     }
   }, [waypoints, userLocation, polygons, disasterPoint])
-
-  useEffect(() => {
-    console.log({ redRoute })
-  }, [redRoute])
 
   useEffect(() => {
     if (!shelters.length) return
@@ -1100,31 +1136,34 @@ function GoogleMaps({ currentLayer, searchResult }) {
             )}
 
             {/* Kontrol zoom & lokasi */}
-            <div className="absolute bottom-24 right-8 flex flex-col gap-2 justify-end items-end">
+            <div className="absolute bottom-20 right-2 flex flex-col gap-1 justify-end items-end">
               <Button
+                size={"sm"}
                 onClick={handleZoomIn}
                 className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
               >
                 <ZoomIn />
               </Button>
               <Button
+                size={"sm"}
                 onClick={handleZoomOut}
                 className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
               >
                 <ZoomOut />
               </Button>
               <Button
+                size={"sm"}
                 className="w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
                 onClick={getUserLoc}
               >
                 <LocateFixed />
               </Button>
-              <Button className="cursor-pointer bg-gray-50 hover:bg-gray-200 h-[45px] w-[50px]">
-                <Navigation2
-                  fill="black"
-                  stroke="black"
-                  className="size-[25px]"
-                />
+              <Button
+                size={"lg"}
+                className=" h-[48px] cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
+                // onClick={getUserLoc}
+              >
+                <Route />
               </Button>
             </div>
           </GoogleMap>

@@ -39,10 +39,8 @@ function AccordionLayer({
     "Chiba University",
   ]
 
-  console.log({ currentLayer })
-
   return filteredLayers.length ? (
-    <div className="layers relative flex-1 m-8 z-20">
+    <div className="layers relative flex-1 m-2 z-20">
       <Accordion
         type="single"
         collapsible
@@ -56,7 +54,7 @@ function AccordionLayer({
                 key={sourceName}
                 value={sourceName}
               >
-                <AccordionTrigger className="px-2 capitalize font-bold">
+                <AccordionTrigger className="px-2 capitalize font-bold text-xs">
                   {sourceName} {/* Admin / Prediction */}
                 </AccordionTrigger>
                 <AccordionContent>
@@ -75,10 +73,10 @@ function AccordionLayer({
                           value={`${sourceName}-${cat}`}
                           className="border-0"
                         >
-                          <AccordionTrigger className="pe-2 ps-5 pt-1 pb-1 font-semibold">
+                          <AccordionTrigger className="pe-2 text-xs ps-5 pt-1 pb-1 font-semibold">
                             {cat}
                           </AccordionTrigger>
-                          <AccordionContent className="flex pb-0 flex-col max-h-50 overflow-y-auto w-full">
+                          <AccordionContent className="text-xs flex pb-0 flex-col max-h-50 overflow-y-auto w-full">
                             {catLayers.map((layer, index) => {
                               const isoString = layer.created_at
                               const date = new Date(isoString)
@@ -105,7 +103,13 @@ function AccordionLayer({
                                     }}
                                     className="cursor-default"
                                   >
-                                    <div className="text px-2 py-2 flex gap-3 items-center hover:bg-gray-100 w-full">
+                                    <div
+                                      className={`text px-2 py-2 flex gap-3 items-center w-full ${
+                                        currentLayer?.id === layer.id
+                                          ? ""
+                                          : "hover:bg-gray-100"
+                                      }`}
+                                    >
                                       <div
                                         className={`text-left ps-8 truncate w-full ${
                                           currentLayer?.id === layer.id
