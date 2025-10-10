@@ -39,6 +39,49 @@ import { toast } from "sonner"
 import { useSelector } from "react-redux"
 import { marker, point } from "leaflet"
 import CustomPopup from "./CustomPopup"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "./ui/form"
+import { Checkbox } from "./ui/checkbox"
+import RouteFormLabel from "./RouteFormLabel"
+
+const items = [
+  {
+    id: "ai_recommended_route",
+    label: "AI Recommended Route",
+  },
+  {
+    id: "walk",
+    label: "Walk",
+  },
+  {
+    id: "drive",
+    label: "Drive",
+  },
+  {
+    id: "official_emergency_route",
+    label: "Official Emergency Route",
+  },
+  {
+    id: "official_emergency_road",
+    label: "Official Emergency Road",
+  },
+]
+
+const FormSchema = z.object({
+  items: z.array(z.string()).refine((value) => value.some((item) => item), {
+    message: "You have to select at least one item.",
+  }),
+})
 
 const containerStyle = {
   width: "100%",
@@ -101,6 +144,25 @@ function GoogleMaps({ currentLayer, searchResult }) {
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
   // })
+
+  const form = useForm({
+    defaultValues: {
+      items: [],
+    },
+    resolver: zodResolver(FormSchema),
+  })
+
+  const watchedItems = form.watch("items") || []
+
+  function onSubmit(data) {
+    toast("You submitted the following values", {
+      description: (
+        <pre className="mt-2 w-[320px] rounded-md bg-neutral-950 p-4">
+          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
+        </pre>
+      ),
+    })
+  }
 
   function isOutsideChiba(point) {
     const minLat = 34.85,
@@ -810,6 +872,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
     setClusters(clusters)
   }, [supercluster, mapReady])
 
+  const isChecked = (id) => watchedItems.includes(id)
+
+  const toggle = (field, id, checked) => {
+    const current = field.value ?? []
+    field.onChange(checked ? [...current, id] : current.filter((v) => v !== id))
+  }
+
   return (
     <div className="z-10">
       {loading ? (
@@ -1158,13 +1227,188 @@ function GoogleMaps({ currentLayer, searchResult }) {
               >
                 <LocateFixed />
               </Button>
-              <Button
-                size={"lg"}
-                className=" h-[48px] cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
-                // onClick={getUserLoc}
-              >
-                <Route />
-              </Button>
+
+              <Dialog>
+                <DialogTrigger>
+                  <Button
+                    size={"lg"}
+                    className=" h-[48px] cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
+                  >
+                    <Route />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Route Type</DialogTitle>
+                    <Form {...form}>
+                      <form
+                        onSubmit={form.handleSubmit((data) =>
+                          console.log(data)
+                        )}
+                        className="space-y-8 mt-2"
+                      >
+                        {/* AI Recommended Route */}
+                        <FormField
+                          control={form.control}
+                          name="items"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center gap-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={isChecked("ai_recommended_route")}
+                                  disabled={isChecked(
+                                    "official_emergency_road"
+                                  )}
+                                  onCheckedChange={(checked) =>
+                                    toggle(
+                                      field,
+                                      "ai_recommended_route",
+                                      checked
+                                    )
+                                  }
+                                />
+                              </FormControl>
+                              <RouteFormLabel
+                                id="ai_recommended_route"
+                                label="AI Recommended Route"
+                                disabled={isChecked("official_emergency_road")}
+                              />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* === Walk Mode === */}
+                        <FormField
+                          control={form.control}
+                          name="items"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center gap-2 ms-6">
+                              <FormControl>
+                                <Checkbox
+                                  checked={isChecked("walk")}
+                                  disabled={
+                                    !isChecked("ai_recommended_route") ||
+                                    isChecked("official_emergency_road")
+                                  }
+                                  onCheckedChange={(checked) =>
+                                    toggle(field, "walk", checked)
+                                  }
+                                />
+                              </FormControl>
+                              <RouteFormLabel
+                                id="walk"
+                                label="Walking Mode"
+                                disabled={
+                                  !isChecked("ai_recommended_route") ||
+                                  isChecked("official_emergency_road")
+                                }
+                              />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* === Road Mode === */}
+                        <FormField
+                          control={form.control}
+                          name="items"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center gap-2 ms-6">
+                              <FormControl>
+                                <Checkbox
+                                  checked={isChecked("drive")}
+                                  disabled={
+                                    !isChecked("ai_recommended_route") ||
+                                    isChecked("official_emergency_road")
+                                  }
+                                  onCheckedChange={(checked) =>
+                                    toggle(field, "drive", checked)
+                                  }
+                                />
+                              </FormControl>
+                              <RouteFormLabel
+                                id="drive"
+                                label="Driving Mode"
+                                disabled={
+                                  !isChecked("ai_recommended_route") ||
+                                  isChecked("official_emergency_road")
+                                }
+                              />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Official Emergency Route */}
+                        <FormField
+                          control={form.control}
+                          name="items"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center gap-2">
+                              <FormControl>
+                                <Checkbox
+                                  checked={isChecked(
+                                    "official_emergency_route"
+                                  )}
+                                  disabled
+                                  onCheckedChange={(checked) =>
+                                    toggle(
+                                      field,
+                                      "official_emergency_route",
+                                      checked
+                                    )
+                                  }
+                                />
+                              </FormControl>
+                              <RouteFormLabel
+                                id="official_emergency_route"
+                                label="Official Emergency Route"
+                                disabled
+                              />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* Road Layer (Official Emergency Road) */}
+                        <div className="mt-6">
+                          <div className="text-lg font-semibold">
+                            Road Layer
+                          </div>
+                          <FormField
+                            control={form.control}
+                            name="items"
+                            render={({ field }) => (
+                              <FormItem className="flex flex-row items-center gap-2 mt-2">
+                                <FormControl>
+                                  <Checkbox
+                                    checked={isChecked(
+                                      "official_emergency_road"
+                                    )}
+                                    disabled={isChecked("ai_recommended_route")}
+                                    onCheckedChange={(checked) =>
+                                      toggle(
+                                        field,
+                                        "official_emergency_road",
+                                        checked
+                                      )
+                                    }
+                                  />
+                                </FormControl>
+                                <RouteFormLabel
+                                  id="official_emergency_road"
+                                  label="Official Emergency Road"
+                                  disabled={isChecked("ai_recommended_route")}
+                                />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <FormMessage />
+                        <Button type="submit">Submit</Button>
+                      </form>
+                    </Form>
+                  </DialogHeader>
+                </DialogContent>
+              </Dialog>
             </div>
           </GoogleMap>
         </>
