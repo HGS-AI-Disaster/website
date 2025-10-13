@@ -890,6 +890,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
       if (active) setRoutePath(safestRoute)
     }
 
+    console.log({ waypoints, userLocation, polygons, disasterPoint })
+
     const dataReady =
       waypoints.length > 0 &&
       userLocation?.lat &&
