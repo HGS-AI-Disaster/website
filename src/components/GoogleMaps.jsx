@@ -893,10 +893,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
     console.log({ waypoints, userLocation, polygons, disasterPoint })
 
     const dataReady =
-      waypoints.length > 0 &&
-      userLocation?.lat &&
-      polygons?.length > 0 &&
-      disasterPoint?.lat
+      userLocation?.lat && polygons?.length > 0 && disasterPoint?.lat
 
     if (!dataReady) return
 
