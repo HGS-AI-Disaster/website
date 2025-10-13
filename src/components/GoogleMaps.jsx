@@ -7,6 +7,7 @@ import {
 } from "@react-google-maps/api"
 import Supercluster from "supercluster"
 import CustomZoom from "./CustomZoom"
+import { useMapContext } from "@/context/MapContext"
 import {
   Dialog,
   DialogContent,
@@ -20,9 +21,12 @@ import React, { useRef, useState, useCallback, useEffect } from "react"
 import { Button } from "./ui/button"
 import {
   Dot,
+  Info,
   LocateFixed,
+  Merge,
   Navigation2,
   Route,
+  TrendingUp,
   TriangleAlert,
   Users,
   ZoomIn,
@@ -53,6 +57,8 @@ import {
 } from "./ui/form"
 import { Checkbox } from "./ui/checkbox"
 import RouteFormLabel from "./RouteFormLabel"
+import fetchGeoJSON from "@/utils/fetchGeoJSON"
+import { getNearestHospitals, isOutsideChiba } from "@/utils/geoUtils"
 
 const items = [
   {
@@ -139,7 +145,9 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [mapCenter, setMapCenter] = useState(center) // default center
   const [redRoute, setRedRoute] = useState([])
   const [popup, setPopup] = useState(null)
-  const [hospitalMarkers, setHospitalMarkers] = useState([])
+  const [markers, setMarkers] = useState([])
+  const { setFindNearby } = useMapContext()
+  const [evacuationType, setEvacuationType] = useState("evacuation_point")
   // const [userLocation, setUserLocation] = useState({
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
@@ -164,62 +172,77 @@ function GoogleMaps({ currentLayer, searchResult }) {
     })
   }
 
-  function isOutsideChiba(point) {
-    const minLat = 34.85,
-      maxLat = 35.96
-    const minLng = 139.69,
-      maxLng = 140.87
-
-    return (
-      point.lat < minLat ||
-      point.lat > maxLat ||
-      point.lng < minLng ||
-      point.lng > maxLng
-    )
-  }
-
-  const findNearbyHospitals = async () => {
+  async function findNearbyHospitals(type) {
+    setMarkers([])
+    setEvacuationType(`${type}`)
+    if (type === "evacuation_point") {
+      return
+    }
     try {
-      // get user location
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
       )
 
-      const userLoc = {
+      // const pos = {
+      //   lat: 35.45456754343619,
+      //   lng: 139.96284726653911,
+      // }
+
+      const pos = {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       }
 
-      // fetch hospital data
-      const geojson = await fetchGeoJSON(
-        import.meta.env.VITE_SUPABASE_MAIN_HOSPITALS_URL
-      )
+      let description
+      let url
+      if (type === "main") {
+        url = import.meta.env.VITE_SUPABASE_MAIN_HOSPITALS_URL
+        description =
+          "We’ll show all main hospitals in Chiba instead of the nearest ones."
+      } else if (type === "local") {
+        url = import.meta.env.VITE_SUPABASE_LOCAL_HEALTHCENTERS_URL
+        description =
+          "We’ll show all local healthcares in Chiba instead of the nearest ones."
+      }
+
+      let geojson = await fetchGeoJSON(url)
+
+      const insideChiba = !isOutsideChiba(pos)
+
+      if (!insideChiba) {
+        toast.info("You’re currently outside Chiba.", {
+          description,
+          // duration: Infinity,
+          id: "outside-chiba",
+          duration: Number.POSITIVE_INFINITY,
+        })
+      }
+
       const hospitals = geojson.features.map((f) => ({
-        name: f.properties.name,
+        name: f.properties.name_en,
         lat: f.geometry.coordinates[1],
         lng: f.geometry.coordinates[0],
       }))
 
-      // check if inside chiba
-      const insideChiba = !isOutsideChiba(userLoc)
-
       const shown = insideChiba
-        ? getNearestHospitals(userLoc, hospitals, 3)
+        ? getNearestHospitals(pos, hospitals, 3)
         : hospitals
 
       setMarkers(shown)
 
-      // center map
-      mapRef.current.panTo(userLoc)
-      new window.google.maps.Marker({
-        map: mapRef.current,
-        position: userLoc,
-        icon: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-      })
+      if (insideChiba) {
+        buildSingleSafeRoute(shown[0])
+      }
     } catch (err) {
       console.error("Error finding hospitals:", err)
     }
   }
+
+  useEffect(() => {
+    if (userLocation.lat || disasterPoint.lat) {
+      setFindNearby(() => findNearbyHospitals)
+    }
+  }, [setFindNearby, userLocation, disasterPoint])
 
   function getCurrentLocation() {
     if (navigator.geolocation) {
@@ -271,10 +294,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     // if (disasterPoint.lat) {
-
-    getCurrentLocation()
+    if (evacuationType === "evacuation_point") {
+      getCurrentLocation()
+    }
     // }
-  }, [disasterPoint])
+  }, [disasterPoint, evacuationType])
 
   useEffect(() => {
     if (
@@ -374,15 +398,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // const pos = {
-          //   lat: position.coords.latitude,
-          //   lng: position.coords.longitude,
-          // }
-
           const pos = {
-            lat: 35.45456754343619,
-            lng: 139.96284726653911,
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
           }
+
+          // const pos = {
+          //   lat: 35.45456754343619,
+          //   lng: 139.96284726653911,
+          // }
 
           const isSameLocation = (a, b) => a.lat === b.lat && a.lng === b.lng
 
@@ -505,10 +529,14 @@ function GoogleMaps({ currentLayer, searchResult }) {
       }
     }
 
-    if (mapReady && currentLayer?.processed_url) {
+    if (
+      mapReady &&
+      currentLayer?.processed_url &&
+      evacuationType === "evacuation_point"
+    ) {
       loadProcessedShelters()
     }
-  }, [mapReady, currentLayer?.processed_url])
+  }, [mapReady, currentLayer?.processed_url, evacuationType])
 
   async function planEvacuationRoute(userLoc, shelters, polygons, id) {
     const startPoint =
@@ -593,10 +621,20 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     // kalau salah satu kosong langsung reset
-    if (!userLocation.lat || !shelters.length || !polygons.length) {
+    if (
+      !userLocation.lat ||
+      !shelters.length ||
+      !polygons.length ||
+      evacuationType !== "evacuation_point"
+    ) {
       setRoutePath([])
       setWaypoints([])
       setWaypointMarkers([])
+      if (shelters.length > 0) {
+        setShelters([])
+      }
+      setClusters([])
+      setSupercluster(null)
       return
     }
 
@@ -607,7 +645,14 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     // kalau ada semua baru plan
     planEvacuationRoute(start, shelters, polygons)
-  }, [shelters, polygons, currentLayer, userLocation, disasterPoint])
+  }, [
+    shelters,
+    polygons,
+    currentLayer,
+    userLocation,
+    disasterPoint,
+    evacuationType,
+  ])
 
   function getZoneForPoint(point, polygons) {
     let zone = null
@@ -695,6 +740,49 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }
 
   useEffect(() => {
+    console.log({ routePath })
+  }, [routePath])
+
+  async function buildSingleSafeRoute(destination) {
+    if (isOutsideChiba(userLocation)) {
+      toast.info("You’re currently outside Chiba.", {
+        description:
+          "We’ll show all main hospitals in Chiba instead of the nearest ones.",
+        // duration: Infinity,
+        id: "outside-chiba",
+        duration: Number.POSITIVE_INFINITY,
+      })
+      return
+    }
+
+    const routes = await getSegmentRoute(userLocation, destination)
+
+    let allRoutes = []
+
+    console.log({ routes })
+
+    routes.forEach((route, altIdx) => {
+      let fullPath = []
+      route.legs.forEach((leg) => {
+        leg.steps.forEach((step) => {
+          const stepPath = polyline
+            .decode(step.polyline.encodedPolyline)
+            .map(([lat, lng]) => ({ lat, lng }))
+          fullPath = fullPath.concat(stepPath)
+        })
+      })
+
+      allRoutes.push({
+        path: fullPath,
+      })
+    })
+
+    console.log({ allRoutes })
+
+    setRoutePath([allRoutes[0]])
+  }
+
+  useEffect(() => {
     let active = true
     const controller = new AbortController()
 
@@ -758,6 +846,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
             redSegments,
           })
         })
+
         currentPoint = destination
       }
 
@@ -955,10 +1044,50 @@ function GoogleMaps({ currentLayer, searchResult }) {
           >
             {mapReady && (
               <>
+                {markers?.map((m, i) => (
+                  <OverlayView
+                    key={i}
+                    position={{ lat: m.lat, lng: m.lng }}
+                    mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+                  >
+                    <HoverCard
+                      openDelay={0}
+                      className=""
+                    >
+                      <HoverCardTrigger className="relative -top-8/12">
+                        <img
+                          src={
+                            evacuationType === "main"
+                              ? `https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(1)%202.svg`
+                              : `https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(2)%203.svg`
+                          }
+                          alt=""
+                          srcset=""
+                        />
+                      </HoverCardTrigger>
+                      <HoverCardContent className={"w-fit py-2 px-2"}>
+                        <div className="font-semibold mb-2">{m.name}</div>
+                        <div className="flex items-center justify-end">
+                          <Button
+                            variant={"outline"}
+                            disabled={isOutsideChiba(userLocation)}
+                            onClick={() => {
+                              buildSingleSafeRoute(m)
+                            }}
+                          >
+                            <TrendingUp />
+                            Direction
+                          </Button>
+                        </div>
+                      </HoverCardContent>
+                    </HoverCard>
+                  </OverlayView>
+                ))}
+
                 {routePath?.length &&
-                  routePath.map((r) => (
+                  routePath.map((r, i) => (
                     <React.Fragment
-                      key={`route-${r?.waypointIndex}-${r?.alternativeIndex}`}
+                      key={`route-${i}-${r?.waypointIndex}-${r?.alternativeIndex}`}
                     >
                       <Polyline
                         path={r?.path}
@@ -1360,7 +1489,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               </FormControl>
                               <RouteFormLabel
                                 id="official_emergency_route"
-                                label="Official Emergency Route"
+                                label="Official Emergency Route (soon)"
                                 disabled
                               />
                             </FormItem>
@@ -1401,7 +1530,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
                             )}
                           />
                         </div>
-
                         <FormMessage />
                         <Button type="submit">Submit</Button>
                       </form>

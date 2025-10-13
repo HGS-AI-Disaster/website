@@ -3,6 +3,7 @@ import { useJsApiLoader } from "@react-google-maps/api"
 import GoogleMaps from "./GoogleMaps"
 import Navigation from "./Navigation"
 import { useSelector } from "react-redux"
+import { MapProvider } from "@/context/MapContext"
 
 const libraries = ["places", "visualization"]
 
@@ -18,6 +19,7 @@ function Map() {
   const [currentLayer, setCurrentLayer] = useState(null)
   const [loading, setLoading] = useState(false)
   const [searchResult, setSearchResult] = useState(null)
+  const [findNearby, setFindNearby] = useState(null)
 
   useEffect(() => {
     setLoading(true)
@@ -34,19 +36,23 @@ function Map() {
   if (!isLoaded || loading) return <p>Loading Map...</p>
 
   return (
-    <div className="flex-1">
-      <GoogleMaps
-        searchResult={searchResult}
-        currentLayer={currentLayer}
-      />
+    <MapProvider>
+      <div className="flex-1">
+        <GoogleMaps
+          searchResult={searchResult}
+          currentLayer={currentLayer}
+          onReady={setFindNearby}
+        />
 
-      <Navigation
-        setSearchResult={setSearchResult}
-        layers={layersData}
-        currentLayer={currentLayer}
-        setCurrentLayer={setCurrentLayer}
-      />
-    </div>
+        <Navigation
+          setSearchResult={setSearchResult}
+          layers={layersData}
+          currentLayer={currentLayer}
+          setCurrentLayer={setCurrentLayer}
+          // findNearby={findNearby}
+        />
+      </div>
+    </MapProvider>
   )
 }
 

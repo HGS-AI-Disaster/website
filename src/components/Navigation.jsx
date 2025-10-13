@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import { useMapContext } from "@/context/MapContext"
 
 function Navigation({
   setSearchResult,
@@ -44,6 +45,8 @@ function Navigation({
   const [autocomplete, setAutocomplete] = useState(null)
   const [currentDate, setCurrentDate] = useState("")
   const [uniqueDates, setUniqueDates] = useState([])
+
+  const { findNearby } = useMapContext()
 
   // ref untuk container yang bisa discroll
   const scrollContainerRef = useRef(null)
@@ -131,7 +134,10 @@ function Navigation({
             </Autocomplete>
             <Tooltip delayDuration={400}>
               <TooltipTrigger asChild>
-                <div className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center">
+                <div
+                  className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center"
+                  onClick={() => findNearby && findNearby("main")}
+                >
                   <img
                     src="https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(1)%202.svg"
                     alt=""
@@ -145,7 +151,10 @@ function Navigation({
             </Tooltip>
             <Tooltip delayDuration={400}>
               <TooltipTrigger asChild>
-                <div className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center">
+                <div
+                  className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center"
+                  onClick={() => findNearby && findNearby("local")}
+                >
                   <img
                     src="https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(2)%203.svg"
                     alt=""
@@ -159,7 +168,10 @@ function Navigation({
             </Tooltip>
             <Tooltip delayDuration={400}>
               <TooltipTrigger asChild>
-                <div className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center">
+                <div
+                  className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center"
+                  onClick={() => findNearby && findNearby("evacuation_point")}
+                >
                   <img
                     src="https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(4)%204.svg"
                     alt=""

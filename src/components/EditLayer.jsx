@@ -107,13 +107,15 @@ export default function EditLayer({ layer }) {
                     Selected:{" "}
                     {fileName ? (
                       fileName
-                    ) : (
+                    ) : layer.file_url ? (
                       <a
                         href={layer.file_url}
                         className="text-blue-500 underline"
                       >
                         {layer.file_url.split("/").pop()}
                       </a>
+                    ) : (
+                      <span className="text-red-500">File not found</span>
                     )}
                   </p>
                   {/* <button onClick={() => console.log(layer)}>test</button> */}
