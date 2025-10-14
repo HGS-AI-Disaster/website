@@ -529,11 +529,14 @@ function GoogleMaps({ currentLayer, searchResult }) {
       }
     }
 
+    console.log({ mapReady, currentLayer, evacuationType })
+
     if (
       mapReady &&
       currentLayer?.processed_url &&
       evacuationType === "evacuation_point"
     ) {
+      console.log("running loadProcessedShelters...")
       loadProcessedShelters()
     }
   }, [mapReady, currentLayer?.processed_url, evacuationType])
