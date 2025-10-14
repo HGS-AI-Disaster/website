@@ -646,10 +646,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       setRoutePath([])
       setWaypoints([])
       setWaypointMarkers([])
-      // if (shelters.length > 0) {
-      //   setShelters([])
-      // }
-      setShelters([])
       setClusters([])
       setSupercluster(null)
       return
