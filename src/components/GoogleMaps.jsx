@@ -890,34 +890,26 @@ function GoogleMaps({ currentLayer, searchResult }) {
       if (active) setRoutePath(safestRoute)
     }
 
-    console.log({ waypoints, userLocation, polygons, disasterPoint })
-
-    const dataReady =
+    if (
       waypoints.length > 0 &&
       userLocation?.lat &&
       polygons?.length > 0 &&
       disasterPoint?.lat
-
-    if (!dataReady) return
-
-    toast.promise(buildSafeRoute(), {
-      id: "searchingRoute",
-      loading: "Searching for evacuation route...",
-      error:
-        "We’re having trouble loading the route. Please check your internet connection and try again.",
-      duration: 20000,
-    })
+    ) {
+      toast.promise(buildSafeRoute(), {
+        id: "searchingRoute",
+        loading: "Searching for evacuation route...",
+        error:
+          "We’re having trouble loading the route. Please check your internet connection and try again.",
+        duration: 20000,
+      })
+    }
 
     return () => {
       active = false
       controller.abort()
     }
-  }, [
-    waypoints.length,
-    userLocation?.lat,
-    polygons?.length,
-    disasterPoint?.lat,
-  ])
+  }, [waypoints, userLocation, polygons, disasterPoint])
 
   useEffect(() => {
     if (!shelters.length) return
