@@ -539,6 +539,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [mapReady, currentLayer?.processed_url, evacuationType])
 
   async function planEvacuationRoute(userLoc, shelters, polygons, id) {
+    console.log("planEvacuationRoute berjalan")
     const startPoint =
       isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
 
@@ -621,6 +622,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     // kalau salah satu kosong langsung reset
+    console.log({ userLocation, shelters, polygons, evacuationType })
+    console.log(
+      !userLocation.lat ||
+        !shelters.length ||
+        !polygons.length ||
+        evacuationType !== "evacuation_point"
+    )
     if (
       !userLocation.lat ||
       !shelters.length ||
@@ -893,7 +901,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
     console.log({ waypoints, userLocation, polygons, disasterPoint })
 
     const dataReady =
-      userLocation?.lat && polygons?.length > 0 && disasterPoint?.lat
+      waypoints.length > 0 &&
+      userLocation?.lat &&
+      polygons?.length > 0 &&
+      disasterPoint?.lat
 
     if (!dataReady) return
 
