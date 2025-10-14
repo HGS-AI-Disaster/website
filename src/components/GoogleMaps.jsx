@@ -636,18 +636,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
         !polygons.length ||
         evacuationType !== "evacuation_point"
     )
+
     if (
       !userLocation.lat ||
-      !shelters.length ||
       !polygons.length ||
       evacuationType !== "evacuation_point"
     ) {
       setRoutePath([])
       setWaypoints([])
       setWaypointMarkers([])
-      if (shelters.length > 0) {
-        setShelters([])
-      }
       setClusters([])
       setSupercluster(null)
       return
