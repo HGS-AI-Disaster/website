@@ -148,6 +148,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [markers, setMarkers] = useState([])
   const { setFindNearby } = useMapContext()
   const [evacuationType, setEvacuationType] = useState("evacuation_point")
+  const [sheltersLoaded, setSheltersLoaded] = useState(false)
   // const [userLocation, setUserLocation] = useState({
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
@@ -908,21 +909,20 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     console.log({ waypoints, userLocation, polygons, disasterPoint })
 
-    const dataReady =
+    if (
       waypoints.length > 0 &&
       userLocation?.lat &&
       polygons?.length > 0 &&
       disasterPoint?.lat
-
-    if (!dataReady) return
-
-    toast.promise(buildSafeRoute(), {
-      id: "searchingRoute",
-      loading: "Searching for evacuation route...",
-      error:
-        "We’re having trouble loading the route. Please check your internet connection and try again.",
-      duration: 20000,
-    })
+    ) {
+      toast.promise(buildSafeRoute(), {
+        id: "searchingRoute",
+        loading: "Searching for evacuation route...",
+        error:
+          "We’re having trouble loading the route. Please check your internet connection and try again.",
+        duration: 20000,
+      })
+    }
 
     return () => {
       active = false
