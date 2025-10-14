@@ -514,8 +514,14 @@ function GoogleMaps({ currentLayer, searchResult }) {
       console.log("running inside loadProcessedShelters 2")
 
       try {
+        console.log("try...")
+
         const res = await fetch(currentLayer.processed_url)
+        console.log({ res })
+        console.log("try 2...")
+
         const data = await res.json()
+        console.log(data)
 
         if (data.type === "FeatureCollection") {
           console.log({ feature: data.feature })
