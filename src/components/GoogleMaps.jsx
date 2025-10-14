@@ -649,6 +649,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       // if (shelters.length > 0) {
       //   setShelters([])
       // }
+      setShelters([])
       setClusters([])
       setSupercluster(null)
       return
