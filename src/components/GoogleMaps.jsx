@@ -148,7 +148,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [markers, setMarkers] = useState([])
   const { setFindNearby } = useMapContext()
   const [evacuationType, setEvacuationType] = useState("evacuation_point")
-  const [sheltersLoaded, setSheltersLoaded] = useState(false)
   // const [userLocation, setUserLocation] = useState({
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
@@ -510,22 +509,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     async function loadProcessedShelters() {
-      console.log("running inside loadProcessedShelters")
       if (!currentLayer?.processed_url) return
-      console.log("running inside loadProcessedShelters 2")
 
       try {
-        console.log("try...")
-
         const res = await fetch(currentLayer.processed_url)
-        console.log({ res })
-        console.log("try 2...")
 
         const data = await res.json()
-        console.log(data)
 
         if (data.type === "FeatureCollection") {
-          console.log({ feature: data.feature })
+          // localStorage.setItem(cacheKey, JSON.stringify(data.features))
           setShelters(data.features)
           return
         } else {
@@ -547,7 +539,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [mapReady, currentLayer?.processed_url, evacuationType])
 
   async function planEvacuationRoute(userLoc, shelters, polygons, id) {
-    console.log("planEvacuationRoute berjalan")
     const startPoint =
       isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
 
@@ -630,14 +621,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     // kalau salah satu kosong langsung reset
-    console.log({ userLocation, shelters, polygons, evacuationType })
-    console.log(
-      !userLocation.lat ||
-        !shelters.length ||
-        !polygons.length ||
-        evacuationType !== "evacuation_point"
-    )
-
     if (
       !userLocation.lat ||
       !shelters.length ||
@@ -909,20 +892,21 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     console.log({ waypoints, userLocation, polygons, disasterPoint })
 
-    if (
+    const dataReady =
       waypoints.length > 0 &&
       userLocation?.lat &&
       polygons?.length > 0 &&
       disasterPoint?.lat
-    ) {
-      toast.promise(buildSafeRoute(), {
-        id: "searchingRoute",
-        loading: "Searching for evacuation route...",
-        error:
-          "We’re having trouble loading the route. Please check your internet connection and try again.",
-        duration: 20000,
-      })
-    }
+
+    if (!dataReady) return
+
+    toast.promise(buildSafeRoute(), {
+      id: "searchingRoute",
+      loading: "Searching for evacuation route...",
+      error:
+        "We’re having trouble loading the route. Please check your internet connection and try again.",
+      duration: 20000,
+    })
 
     return () => {
       active = false
