@@ -978,7 +978,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
       waypoints.length > 0 &&
       userLocation?.lat &&
       polygons?.length > 0 &&
-      disasterPoint?.lat
+      disasterPoint?.lat &&
+      evacuationType.point_type === "evacuation_point"
     ) {
       toast.promise(buildSafeRoute(), {
         id: "searchingRoute",
@@ -993,7 +994,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       active = false
       controller.abort()
     }
-  }, [waypoints, userLocation, polygons, disasterPoint])
+  }, [waypoints, userLocation, polygons, disasterPoint, evacuationType])
 
   useEffect(() => {
     if (!shelters.length) return
