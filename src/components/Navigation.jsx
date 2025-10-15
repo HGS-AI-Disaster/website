@@ -13,14 +13,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -45,8 +37,7 @@ function Navigation({
   const [autocomplete, setAutocomplete] = useState(null)
   const [currentDate, setCurrentDate] = useState("")
   const [uniqueDates, setUniqueDates] = useState([])
-
-  const { findNearby } = useMapContext()
+  const { findNearby, evacuationType, setEvacuationType } = useMapContext()
 
   // ref untuk container yang bisa discroll
   const scrollContainerRef = useRef(null)
@@ -136,7 +127,14 @@ function Navigation({
               <TooltipTrigger asChild>
                 <div
                   className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center"
-                  onClick={() => findNearby && findNearby("main")}
+                  onClick={() => {
+                    console.log({ evacuationType })
+                    setEvacuationType({
+                      point_type: "main",
+                      mode: evacuationType.mode,
+                    })
+                    findNearby && findNearby("main")
+                  }}
                 >
                   <img
                     src="https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(1)%202.svg"
@@ -153,7 +151,14 @@ function Navigation({
               <TooltipTrigger asChild>
                 <div
                   className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center"
-                  onClick={() => findNearby && findNearby("local")}
+                  onClick={() => {
+                    console.log({ evacuationType })
+                    setEvacuationType({
+                      point_type: "local",
+                      mode: evacuationType.mode,
+                    })
+                    findNearby && findNearby("local")
+                  }}
                 >
                   <img
                     src="https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(2)%203.svg"
@@ -170,7 +175,14 @@ function Navigation({
               <TooltipTrigger asChild>
                 <div
                   className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center"
-                  onClick={() => findNearby && findNearby("evacuation_point")}
+                  onClick={() => {
+                    setEvacuationType({
+                      point_type: "evacuation_point",
+                      mode: evacuationType.mode,
+                    })
+
+                    findNearby && findNearby("evacuation_point")
+                  }}
                 >
                   <img
                     src="https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(4)%204.svg"

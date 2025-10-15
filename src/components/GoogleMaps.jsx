@@ -153,6 +153,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [markers, setMarkers] = useState([])
   const { setFindNearby, evacuationType, setEvacuationType } = useMapContext()
   const [road, setRoad] = useState([])
+  const [currentMarker, setCurrentMarker] = useState(null)
   const dataReady = useMemo(() => {
     return (
       !!userLocation.lat &&
@@ -186,7 +187,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   async function findNearbyHospitals(type) {
     setRoad([])
     setMarkers([])
-    setEvacuationType({ point_type: `${type}`, mode: "test" })
+    setEvacuationType({ point_type: `${type}`, mode: evacuationType.mode })
 
     if (type === "evacuation_point") {
       try {
@@ -221,7 +222,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
     setRedRoute([])
 
     try {
-      console.log({ waypointMarkers })
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
       )
@@ -276,6 +276,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
       if (!outsideKanto) {
         buildSingleSafeRoute(shown[0])
+        setCurrentMarker(shown[0])
       }
     } catch (err) {
       console.error("Error finding hospitals:", err)
@@ -537,24 +538,41 @@ function GoogleMaps({ currentLayer, searchResult }) {
     }
   }
 
-  async function getSegmentRoute(origin, destination) {
-    const body = {
-      origin: {
-        location: { latLng: { latitude: origin.lat, longitude: origin.lng } },
-      },
-      destination: {
-        location: {
-          latLng: { latitude: destination.lat, longitude: destination.lng },
+  async function getSegmentRoute(origin, destination, mode) {
+    console.log({ destination })
+    let body = {}
+
+    if (mode === "walk" || evacuationType.mode === "walk") {
+      body = {
+        origin: {
+          location: { latLng: { latitude: origin.lat, longitude: origin.lng } },
         },
-      },
-      travelMode: "DRIVE",
-      routingPreference: "TRAFFIC_AWARE_OPTIMAL",
-      computeAlternativeRoutes: true,
-      routeModifiers: {
-        avoidHighways: false,
-        avoidTolls: false,
-        avoidFerries: true,
-      },
+        destination: {
+          location: {
+            latLng: { latitude: destination.lat, longitude: destination.lng },
+          },
+        },
+        travelMode: "WALK",
+      }
+    } else {
+      body = {
+        origin: {
+          location: { latLng: { latitude: origin.lat, longitude: origin.lng } },
+        },
+        destination: {
+          location: {
+            latLng: { latitude: destination.lat, longitude: destination.lng },
+          },
+        },
+        travelMode: "DRIVE",
+        routingPreference: "TRAFFIC_AWARE_OPTIMAL",
+        computeAlternativeRoutes: true,
+        routeModifiers: {
+          avoidHighways: false,
+          avoidTolls: false,
+          avoidFerries: true,
+        },
+      }
     }
 
     const response = await fetch(
@@ -834,7 +852,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
     console.log({ routePath })
   }, [routePath])
 
-  async function buildSingleSafeRoute(destination) {
+  async function buildSingleSafeRoute(destination, mode) {
+    console.log({ desDiBSS: destination })
     if (isOutsideKanto(userLocation)) {
       toast.info("You’re currently outside Kanto Region.", {
         description:
@@ -846,7 +865,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       return
     }
 
-    const routes = await getSegmentRoute(userLocation, destination)
+    const routes = await getSegmentRoute(userLocation, destination, mode)
 
     let allRoutes = []
 
@@ -1058,8 +1077,34 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const isChecked = (id) => watchedItems.includes(id)
 
   const toggle = (field, id, checked) => {
-    const current = field.value ?? []
-    field.onChange(checked ? [...current, id] : current.filter((v) => v !== id))
+    let current = Array.isArray(field.value) ? [...field.value] : []
+
+    // === CASE 1: User uncheck item ===
+    if (!checked) {
+      current = current.filter((v) => v !== id)
+
+      // Jika user uncheck "ai_recommended_route", uncheck juga walk & drive
+      if (id === "ai_recommended_route") {
+        current = current.filter((v) => v !== "walk" && v !== "drive")
+      }
+
+      field.onChange(current)
+      return
+    }
+
+    // === CASE 2: User check item ===
+    // Tambahkan item baru
+    current.push(id)
+
+    // Drive dan Walk saling eksklusif
+    if (id === "drive") {
+      current = current.filter((v) => v !== "walk")
+    }
+    if (id === "walk") {
+      current = current.filter((v) => v !== "drive")
+    }
+
+    field.onChange(current)
   }
 
   return (
@@ -1166,7 +1211,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
                             variant={"outline"}
                             disabled={isOutsideKanto(userLocation)}
                             onClick={() => {
-                              buildSingleSafeRoute(m)
+                              buildSingleSafeRoute(m, evacuationType.mode)
+                              setCurrentMarker(m)
                             }}
                           >
                             <TrendingUp />
@@ -1489,7 +1535,45 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     <Form {...form}>
                       <form
                         onSubmit={form.handleSubmit(async (data) => {
+                          console.log(data)
+                          console.log(evacuationType)
+                          if (
+                            data.items.includes("ai_recommended_route") &&
+                            !data.items.includes("walk") &&
+                            !data.items.includes("drive")
+                          ) {
+                            toast.error(
+                              "Please select a mode (Driving or Walking) before continuing."
+                            )
+                            return // stop submit
+                          }
+
                           setRouteTypeDialogOpen(false)
+
+                          if (
+                            (data.items.includes("ai_recommended_route") &&
+                              data.items.includes("walk")) ||
+                            data.items.includes("drive")
+                          ) {
+                            if (data.items.includes("walk")) {
+                              setEvacuationType({
+                                point_type: evacuationType.point_type,
+                                mode: "walk",
+                              })
+                            } else if (data.items.includes("drive")) {
+                              setEvacuationType({
+                                point_type: evacuationType.point_type,
+                                mode: "drive",
+                              })
+                            }
+
+                            if (
+                              evacuationType.point_type !== "evacuation_point"
+                            ) {
+                              buildSingleSafeRoute(currentMarker, "walk")
+                            }
+                          }
+
                           if (data.items.includes("official_emergency_road")) {
                             setMarkers([])
                             setRoutePath([])
@@ -1591,7 +1675,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               </FormControl>
                               <RouteFormLabel
                                 id="drive"
-                                label="Driving Mode"
+                                label="Driving Mode (default)"
                                 disabled={
                                   !isChecked("ai_recommended_route") ||
                                   isChecked("official_emergency_road")
