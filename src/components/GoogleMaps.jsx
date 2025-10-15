@@ -616,7 +616,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [mapReady, currentLayer?.processed_url, evacuationType.point_type])
 
   async function planEvacuationRoute(userLoc, shelters, polygons, id) {
-    console.log("running plan evacuation route...")
+    if (evacuationType.point_type !== "evacuation_point") return
     const startPoint =
       isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
 
