@@ -279,6 +279,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
           setUserLocation(pos)
 
+          console.log("testt")
+
           if (isOutsideChiba(pos)) {
             if (disasterPoint.lat) {
               setMapCenter(disasterPoint)
@@ -911,6 +913,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
       if (active) setRoutePath(safestRoute)
     }
+
+    console.log({ waypoints, userLocation, polygons, disasterPoint })
 
     if (
       waypoints.length > 0 &&
