@@ -17,8 +17,22 @@ export function getNearestHospitals(userLoc, hospitals, limit = 3) {
 export function isOutsideChiba(point) {
   const minLat = 34.85,
     maxLat = 35.96
-  const minLng = 139.69,
+  const minLng = 139.75,
     maxLng = 140.87
+
+  return (
+    point.lat < minLat ||
+    point.lat > maxLat ||
+    point.lng < minLng ||
+    point.lng > maxLng
+  )
+}
+
+export function isOutsideKanto(point) {
+  const minLat = 35.0
+  const maxLat = 37.1
+  const minLng = 138.7
+  const maxLng = 141.1
 
   return (
     point.lat < minLat ||
