@@ -140,6 +140,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [waypoints, setWaypoints] = useState([]) // simpan titik2 pilihan user
   const [waypointMarkers, setWaypointMarkers] = useState([])
   const [dialogIsOpen, setDialogIsOpen] = useState(false)
+  const [routeTypeDialogOpen, setRouteTypeDialogOpen] = useState(false)
   const [selectedShelter, setSelectedShelter] = useState()
   const [mapReady, setMapReady] = useState(false)
   const [clusters, setClusters] = useState([])
@@ -214,8 +215,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
     setSupercluster(null)
     setClusters([])
-    setWaypointMarkers([])
     setWaypoints([])
+    setWaypointMarkers([])
     setRoutePath([])
     setRedRoute([])
 
@@ -1468,9 +1469,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
                 <LocateFixed />
               </Button>
 
+              {/* Dialog Route Type */}
               <Dialog
-                open={dialogIsOpen}
-                onOpenChange={setDialogIsOpen}
+                open={routeTypeDialogOpen}
+                onOpenChange={setRouteTypeDialogOpen}
               >
                 <DialogTrigger asChild>
                   <Button
@@ -1486,7 +1488,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     <Form {...form}>
                       <form
                         onSubmit={form.handleSubmit(async (data) => {
-                          setDialogIsOpen(false)
+                          setRouteTypeDialogOpen(false)
                           if (data.items.includes("official_emergency_road")) {
                             setMarkers([])
                             setRoutePath([])
