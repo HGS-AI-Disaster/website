@@ -58,7 +58,11 @@ import {
 import { Checkbox } from "./ui/checkbox"
 import RouteFormLabel from "./RouteFormLabel"
 import fetchGeoJSON from "@/utils/fetchGeoJSON"
-import { getNearestHospitals, isOutsideChiba } from "@/utils/geoUtils"
+import {
+  getNearestHospitals,
+  isOutsideKanto,
+  isOutsideChiba,
+} from "@/utils/geoUtils"
 
 const items = [
   {
@@ -146,8 +150,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [redRoute, setRedRoute] = useState([])
   const [popup, setPopup] = useState(null)
   const [markers, setMarkers] = useState([])
-  const { setFindNearby } = useMapContext()
-  const [evacuationType, setEvacuationType] = useState("evacuation_point")
+  const { setFindNearby, evacuationType, setEvacuationType } = useMapContext()
+  const [road, setRoad] = useState([])
   // const [userLocation, setUserLocation] = useState({
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
@@ -162,22 +166,36 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   const watchedItems = form.watch("items") || []
 
-  function onSubmit(data) {
-    toast("You submitted the following values", {
-      description: (
-        <pre className="mt-2 w-[320px] rounded-md bg-neutral-950 p-4">
-          <code className="text-white">{JSON.stringify(data, null, 2)}</code>
-        </pre>
-      ),
-    })
-  }
-
   async function findNearbyHospitals(type) {
+    setRoad([])
     setMarkers([])
-    setEvacuationType(`${type}`)
+    setEvacuationType({ point_type: `${type}`, mode: "test" })
+
     if (type === "evacuation_point") {
+      try {
+        const position = await new Promise((resolve, reject) =>
+          navigator.geolocation.getCurrentPosition(resolve, reject)
+        )
+
+        const pos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }
+
+        setUserLocation(pos)
+
+        // pastikan shelter & polygons sudah ter-load
+        if (shelters.length && polygons.length) {
+          await planEvacuationRoute(pos, shelters, polygons)
+        } else {
+          toast.info("Shelters or risk map not loaded yet.")
+        }
+      } catch (err) {
+        console.error("Error getting location for evacuation route:", err)
+      }
       return
     }
+
     try {
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
@@ -193,6 +211,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
         lng: position.coords.longitude,
       }
 
+      setUserLocation(pos)
+
       let description
       let url
       if (type === "main") {
@@ -207,13 +227,12 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
       let geojson = await fetchGeoJSON(url)
 
-      const insideChiba = !isOutsideChiba(pos)
+      const outsideKanto = isOutsideKanto(pos)
 
-      if (!insideChiba) {
-        toast.info("You’re currently outside Chiba.", {
+      if (outsideKanto) {
+        toast.info("You’re currently outside Kanto Region.", {
           description,
-          // duration: Infinity,
-          id: "outside-chiba",
+          id: "outside-kanto",
           duration: Number.POSITIVE_INFINITY,
         })
       }
@@ -224,13 +243,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
         lng: f.geometry.coordinates[0],
       }))
 
-      const shown = insideChiba
+      const shown = !outsideKanto
         ? getNearestHospitals(pos, hospitals, 3)
         : hospitals
 
       setMarkers(shown)
 
-      if (insideChiba) {
+      if (!outsideKanto) {
         buildSingleSafeRoute(shown[0])
       }
     } catch (err) {
@@ -261,14 +280,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
           setUserLocation(pos)
 
           if (isOutsideChiba(pos)) {
-            // kalau di luar Chiba → center & starting point di disasterPoint
             if (disasterPoint.lat) {
               setMapCenter(disasterPoint)
               mapRef.current?.panTo(disasterPoint)
               toast.info("You’re currently outside Chiba.", {
                 description:
                   "We don’t have data for your location yet. The evacuation routes shown are from the disaster point to the safest point, not from your current location.",
-                // duration: Infinity,
+
                 id: "outside-chiba",
                 duration: Number.POSITIVE_INFINITY,
               })
@@ -294,11 +312,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   useEffect(() => {
     // if (disasterPoint.lat) {
-    if (evacuationType === "evacuation_point") {
+    if (evacuationType.point_type === "evacuation_point") {
       getCurrentLocation()
     }
     // }
-  }, [disasterPoint, evacuationType])
+  }, [disasterPoint, evacuationType.point_type])
 
   useEffect(() => {
     if (
@@ -419,7 +437,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
           if (isOutsideChiba(pos)) {
             toast.info("You’re currently outside Chiba.", {
               description: "We don’t have data for your location yet.",
-              // duration: Infinity,
+
               id: "outside-chiba",
               duration: Number.POSITIVE_INFINITY,
             })
@@ -532,11 +550,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
     if (
       mapReady &&
       currentLayer?.processed_url &&
-      evacuationType === "evacuation_point"
+      evacuationType.point_type === "evacuation_point"
     ) {
       loadProcessedShelters()
     }
-  }, [mapReady, currentLayer?.processed_url, evacuationType])
+  }, [mapReady, currentLayer?.processed_url, evacuationType.point_type])
 
   async function planEvacuationRoute(userLoc, shelters, polygons, id) {
     const startPoint =
@@ -625,7 +643,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       !userLocation.lat ||
       !shelters.length ||
       !polygons.length ||
-      evacuationType !== "evacuation_point"
+      evacuationType.point_type !== "evacuation_point"
     ) {
       setRoutePath([])
       setWaypoints([])
@@ -638,10 +656,14 @@ function GoogleMaps({ currentLayer, searchResult }) {
       return
     }
 
+    console.log({ userLocation })
+
     const start =
       isOutsideChiba(userLocation) && disasterPoint.lat
         ? disasterPoint
         : userLocation
+
+    console.log({ isOutsideChiba: isOutsideChiba(userLocation) })
 
     // kalau ada semua baru plan
     planEvacuationRoute(start, shelters, polygons)
@@ -744,11 +766,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [routePath])
 
   async function buildSingleSafeRoute(destination) {
-    if (isOutsideChiba(userLocation)) {
-      toast.info("You’re currently outside Chiba.", {
+    if (isOutsideKanto(userLocation)) {
+      toast.info("You’re currently outside Kanto Region.", {
         description:
           "We’ll show all main hospitals in Chiba instead of the nearest ones.",
-        // duration: Infinity,
+
         id: "outside-chiba",
         duration: Number.POSITIVE_INFINITY,
       })
@@ -1057,7 +1079,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                       <HoverCardTrigger className="relative -top-8/12">
                         <img
                           src={
-                            evacuationType === "main"
+                            evacuationType.point_type === "main"
                               ? `https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(1)%202.svg`
                               : `https://ktfdrhfhhdlmhdizorut.supabase.co/storage/v1/object/public/icons/hospital%20(2)%203.svg`
                           }
@@ -1070,7 +1092,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                         <div className="flex items-center justify-end">
                           <Button
                             variant={"outline"}
-                            disabled={isOutsideChiba(userLocation)}
+                            disabled={isOutsideKanto(userLocation)}
                             onClick={() => {
                               buildSingleSafeRoute(m)
                             }}
@@ -1084,6 +1106,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                   </OverlayView>
                 ))}
 
+                {/* Route Path */}
                 {routePath?.length &&
                   routePath.map((r, i) => (
                     <React.Fragment
@@ -1117,6 +1140,24 @@ function GoogleMaps({ currentLayer, searchResult }) {
                           onMouseOut={() => setPopup(null)}
                         />
                       ))}
+                    </React.Fragment>
+                  ))}
+
+                {/* Road */}
+                {road?.length &&
+                  road.map((r, i) => (
+                    <React.Fragment
+                      key={`route-${i}-${r?.waypointIndex}-${r?.alternativeIndex}`}
+                    >
+                      <Polyline
+                        path={r?.path}
+                        options={{
+                          strokeColor: "#A9A9A9", // biru utama
+                          strokeOpacity: 1,
+                          strokeWeight: 3,
+                          zIndex: 999,
+                        }}
+                      />
                     </React.Fragment>
                   ))}
 
@@ -1357,8 +1398,11 @@ function GoogleMaps({ currentLayer, searchResult }) {
                 <LocateFixed />
               </Button>
 
-              <Dialog>
-                <DialogTrigger>
+              <Dialog
+                open={dialogIsOpen}
+                onOpenChange={setDialogIsOpen}
+              >
+                <DialogTrigger asChild>
                   <Button
                     size={"lg"}
                     className=" h-[48px] cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
@@ -1371,9 +1415,57 @@ function GoogleMaps({ currentLayer, searchResult }) {
                     <DialogTitle>Route Type</DialogTitle>
                     <Form {...form}>
                       <form
-                        onSubmit={form.handleSubmit((data) =>
-                          console.log(data)
-                        )}
+                        onSubmit={form.handleSubmit(async (data) => {
+                          setDialogIsOpen(false)
+                          if (data.items.includes("official_emergency_road")) {
+                            setMarkers([])
+                            setRoutePath([])
+
+                            setWaypoints([])
+                            setWaypointMarkers([])
+
+                            setClusters([])
+                            setSupercluster(null)
+
+                            try {
+                              const url = import.meta.env
+                                .VITE_SUPABASE_EMERGENCY_ROAD_URL
+                              console.log("Fetching from:", url)
+
+                              const res = await fetch(url)
+                              if (!res.ok)
+                                throw new Error(
+                                  `Failed to fetch GeoJSON (${res.status})`
+                                )
+
+                              const data = await res.json()
+                              console.log("GeoJSON result:", data)
+
+                              if (!data?.features) {
+                                console.warn("No features found in GeoJSON")
+                                return
+                              }
+
+                              // === Convert LineString ke routePath ===
+                              const lineFeatures = data.features.filter(
+                                (f) => f.geometry?.type === "LineString"
+                              )
+
+                              const converted = lineFeatures.map((f, idx) => ({
+                                waypointIndex: idx,
+                                alternativeIndex: 0,
+                                path: f.geometry.coordinates.map(
+                                  ([lng, lat]) => ({ lat, lng })
+                                ),
+                                redSegments: [],
+                              }))
+
+                              setRoad(converted)
+                            } catch (err) {
+                              console.error("❌ Error fetching GeoJSON:", err)
+                            }
+                          }
+                        })}
                         className="space-y-8 mt-2"
                       >
                         {/* AI Recommended Route */}
