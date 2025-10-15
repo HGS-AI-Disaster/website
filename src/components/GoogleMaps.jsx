@@ -221,6 +221,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
     setRedRoute([])
 
     try {
+      console.log({ waypointMarkers })
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
       )
