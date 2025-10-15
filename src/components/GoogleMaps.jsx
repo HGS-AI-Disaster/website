@@ -642,9 +642,9 @@ function GoogleMaps({ currentLayer, searchResult }) {
   useEffect(() => {
     // kalau salah satu kosong langsung reset
     if (
-      !userLocation.lat ||
-      !shelters.length ||
-      !polygons.length ||
+      !userLocation.lat &&
+      !shelters.length &&
+      !polygons.length &&
       evacuationType.point_type !== "evacuation_point"
     ) {
       setRoutePath([])
@@ -677,6 +677,19 @@ function GoogleMaps({ currentLayer, searchResult }) {
     disasterPoint,
     evacuationType,
   ])
+
+  // Tambahkan useEffect baru
+  useEffect(() => {
+    if (
+      userLocation.lat &&
+      shelters.length > 0 &&
+      polygons.length > 0 &&
+      evacuationType.point_type === "evacuation_point"
+    ) {
+      console.log("✅ Semua data siap, menjalankan planEvacuationRoute...")
+      planEvacuationRoute(userLocation, shelters, polygons)
+    }
+  }, [userLocation, shelters, polygons, evacuationType.point_type])
 
   function getZoneForPoint(point, polygons) {
     let zone = null
