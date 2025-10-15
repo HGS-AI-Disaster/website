@@ -212,12 +212,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       return
     }
 
-    setWaypointMarkers([])
-    setWaypoints([])
-    setSupercluster(null)
-    setClusters([])
-    setRoutePath([])
-
     try {
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
@@ -343,14 +337,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [disasterPoint, evacuationType.point_type])
 
   useEffect(() => {
-    console.log("[DataReady Effect Triggered]")
-    console.log({
-      userLocation,
-      sheltersCount: shelters.length,
-      polygonsCount: polygons.length,
-      disasterPoint,
-      evacuationType: evacuationType.point_type,
-    })
+    if (evacuationType.point_type !== "evacuation_point") {
+      console.log(
+        "🛑 [DataReady Effect] Skip: evacuationType bukan evacuation_point =>",
+        evacuationType.point_type
+      )
+      return
+    }
 
     if (dataReady) {
       console.log("✅ Semua data siap — memanggil planEvacuationRoute()")
@@ -358,9 +351,17 @@ function GoogleMaps({ currentLayer, searchResult }) {
     } else {
       console.log("⏳ Data belum lengkap, menunggu semua dependency siap...")
     }
-  }, [dataReady])
+  }, [dataReady, evacuationType.point_type])
 
   useEffect(() => {
+    if (evacuationType.point_type !== "evacuation_point") {
+      console.log(
+        "🛑 [BuildSafeRoute] Skip: evacuationType bukan evacuation_point =>",
+        evacuationType.point_type
+      )
+      return
+    }
+
     console.log("🧭 [BuildSafeRoute Effect] Triggered with:", {
       waypoints,
       userLocation,
@@ -369,7 +370,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
     })
 
     // isi effect existing buildSafeRoute tetap, tapi tambah log di awal & akhir
-  }, [waypoints, userLocation, polygons, disasterPoint])
+  }, [waypoints, userLocation, polygons, disasterPoint, evacuationType])
 
   useEffect(() => {
     const anyMissing = !userLocation.lat || !shelters.length || !polygons.length
