@@ -212,6 +212,13 @@ function GoogleMaps({ currentLayer, searchResult }) {
       return
     }
 
+    setSupercluster(null)
+    setClusters([])
+    setWaypointMarkers([])
+    setWaypoints([])
+    setRoutePath([])
+    setRedRoute([])
+
     try {
       const position = await new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(resolve, reject)
