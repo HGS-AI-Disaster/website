@@ -17,7 +17,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { MarkerClusterer } from "@react-google-maps/api"
-import React, { useRef, useState, useCallback, useEffect } from "react"
+import React, { useRef, useState, useCallback, useEffect, useMemo } from "react"
 import { Button } from "./ui/button"
 import {
   Dot,
@@ -152,6 +152,22 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [markers, setMarkers] = useState([])
   const { setFindNearby, evacuationType, setEvacuationType } = useMapContext()
   const [road, setRoad] = useState([])
+  const dataReady = useMemo(() => {
+    return (
+      !!userLocation.lat &&
+      shelters.length > 0 &&
+      polygons.length > 0 &&
+      !!disasterPoint.lat &&
+      evacuationType.point_type === "evacuation_point"
+    )
+  }, [
+    userLocation,
+    shelters,
+    polygons,
+    disasterPoint,
+    evacuationType.point_type,
+  ])
+
   // const [userLocation, setUserLocation] = useState({
   //   lat: 35.20307959805068,
   //   lng: 140.3732847887497,
@@ -321,21 +337,46 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [disasterPoint, evacuationType.point_type])
 
   useEffect(() => {
-    if (
-      !layersData ||
-      layersData.length === 0 ||
-      layersData.find((l) => l.visibility === "public") === undefined
-    ) {
-      console.log("layersData is empty, clearing map elements.")
-      setPolygons([])
+    console.log("[DataReady Effect Triggered]")
+    console.log({
+      userLocation,
+      sheltersCount: shelters.length,
+      polygonsCount: polygons.length,
+      disasterPoint,
+      evacuationType: evacuationType.point_type,
+    })
+
+    if (dataReady) {
+      console.log("✅ Semua data siap — memanggil planEvacuationRoute()")
+      planEvacuationRoute(userLocation, shelters, polygons)
+    } else {
+      console.log("⏳ Data belum lengkap, menunggu semua dependency siap...")
+    }
+  }, [dataReady])
+
+  useEffect(() => {
+    console.log("🧭 [BuildSafeRoute Effect] Triggered with:", {
+      waypoints,
+      userLocation,
+      polygonsCount: polygons.length,
+      disasterPoint,
+    })
+
+    // isi effect existing buildSafeRoute tetap, tapi tambah log di awal & akhir
+  }, [waypoints, userLocation, polygons, disasterPoint])
+
+  useEffect(() => {
+    const anyMissing = !userLocation.lat || !shelters.length || !polygons.length
+
+    if (anyMissing) {
+      console.warn(
+        "[Reset Warning] Beberapa data belum siap. Tidak menjalankan planEvacuationRoute."
+      )
       setRoutePath([])
       setClusters([])
-      setWaypoints([])
-      setWaypointMarkers([])
       setSupercluster(null)
-      setShelters([])
     }
-  }, [layersData])
+  }, [userLocation, shelters, polygons])
 
   const handleIdle = () => {
     setMapReady(true)
@@ -559,6 +600,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   }, [mapReady, currentLayer?.processed_url, evacuationType.point_type])
 
   async function planEvacuationRoute(userLoc, shelters, polygons, id) {
+    console.log("running plan evacuation route...")
     const startPoint =
       isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
 
@@ -648,7 +690,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       evacuationType.point_type !== "evacuation_point"
     ) {
       setRoutePath([])
-      setWaypoints([])
+      // setWaypoints([])
       setWaypointMarkers([])
       if (shelters.length > 0) {
         setShelters([])
@@ -658,14 +700,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
       return
     }
 
-    console.log({ userLocation })
-
     const start =
       isOutsideChiba(userLocation) && disasterPoint.lat
         ? disasterPoint
         : userLocation
-
-    console.log({ isOutsideChiba: isOutsideChiba(userLocation) })
 
     // kalau ada semua baru plan
     planEvacuationRoute(start, shelters, polygons)
