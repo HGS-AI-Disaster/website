@@ -1571,36 +1571,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
                           )}
                         />
 
-                        {/* === Walk Mode === */}
-                        <FormField
-                          control={form.control}
-                          name="items"
-                          render={({ field }) => (
-                            <FormItem className="flex flex-row items-center gap-2 ms-6">
-                              <FormControl>
-                                <Checkbox
-                                  checked={isChecked("walk")}
-                                  disabled={
-                                    !isChecked("ai_recommended_route") ||
-                                    isChecked("official_emergency_road")
-                                  }
-                                  onCheckedChange={(checked) =>
-                                    toggle(field, "walk", checked)
-                                  }
-                                />
-                              </FormControl>
-                              <RouteFormLabel
-                                id="walk"
-                                label="Walking Mode"
-                                disabled={
-                                  !isChecked("ai_recommended_route") ||
-                                  isChecked("official_emergency_road")
-                                }
-                              />
-                            </FormItem>
-                          )}
-                        />
-
                         {/* === Road Mode === */}
                         <FormField
                           control={form.control}
@@ -1622,6 +1592,36 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               <RouteFormLabel
                                 id="drive"
                                 label="Driving Mode"
+                                disabled={
+                                  !isChecked("ai_recommended_route") ||
+                                  isChecked("official_emergency_road")
+                                }
+                              />
+                            </FormItem>
+                          )}
+                        />
+
+                        {/* === Walk Mode === */}
+                        <FormField
+                          control={form.control}
+                          name="items"
+                          render={({ field }) => (
+                            <FormItem className="flex flex-row items-center gap-2 ms-6">
+                              <FormControl>
+                                <Checkbox
+                                  checked={isChecked("walk")}
+                                  disabled={
+                                    !isChecked("ai_recommended_route") ||
+                                    isChecked("official_emergency_road")
+                                  }
+                                  onCheckedChange={(checked) =>
+                                    toggle(field, "walk", checked)
+                                  }
+                                />
+                              </FormControl>
+                              <RouteFormLabel
+                                id="walk"
+                                label="Walking Mode"
                                 disabled={
                                   !isChecked("ai_recommended_route") ||
                                   isChecked("official_emergency_road")
