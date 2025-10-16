@@ -188,7 +188,7 @@ function GoogleMaps({
 
   const form = useForm({
     defaultValues: {
-      items: [],
+      items: ["ai_recommended_route", "drive"],
     },
     resolver: zodResolver(FormSchema),
   })
