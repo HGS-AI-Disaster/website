@@ -129,7 +129,12 @@ function geoJsonToPolygons(geojson) {
   return polygons
 }
 
-function GoogleMaps({ currentLayer, searchResult }) {
+function GoogleMaps({
+  currentLayer,
+  searchResult,
+  evacuationType,
+  setEvacuationType,
+}) {
   const { data: layersData, status } = useSelector((state) => state.layers)
 
   const [loading, setLoading] = useState(false)
@@ -151,7 +156,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const [redRoute, setRedRoute] = useState([])
   const [popup, setPopup] = useState(null)
   const [markers, setMarkers] = useState([])
-  const { setFindNearby, evacuationType, setEvacuationType } = useMapContext()
+  const { setFindNearby } = useMapContext()
   const [road, setRoad] = useState([])
   const [currentMarker, setCurrentMarker] = useState(null)
   const dataReady = useMemo(() => {
@@ -189,7 +194,6 @@ function GoogleMaps({ currentLayer, searchResult }) {
       setEvacuationType({ point_type: evacuationType.point_type, mode })
     }
 
-    setRoad([])
     setMarkers([])
     setEvacuationType({ point_type: `${type}`, mode: evacuationType.mode })
 
@@ -1572,7 +1576,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
                                 buildSingleSafeRoute(currentMarker, "walk")
                               }
 
-                              if (road.length) {
+                              if (
+                                road.length &&
+                                !data.items.includes("official_emergency_road")
+                              ) {
                                 setRoad([])
                                 findNearbyHospitals(
                                   evacuationType.point_type,
@@ -1590,7 +1597,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
                                 buildSingleSafeRoute(currentMarker, "drive")
                               }
 
-                              if (road.length) {
+                              if (
+                                road.length &&
+                                !data.items.includes("official_emergency_road")
+                              ) {
                                 setRoad([])
                                 findNearbyHospitals(
                                   evacuationType.point_type,
@@ -1690,10 +1700,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               <FormControl>
                                 <Checkbox
                                   checked={isChecked("drive")}
-                                  disabled={
-                                    !isChecked("ai_recommended_route") ||
-                                    isChecked("official_emergency_road")
-                                  }
+                                  disabled={!isChecked("ai_recommended_route")}
                                   onCheckedChange={(checked) =>
                                     toggle(field, "drive", checked)
                                   }
@@ -1702,10 +1709,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               <RouteFormLabel
                                 id="drive"
                                 label="Driving Mode (default)"
-                                disabled={
-                                  !isChecked("ai_recommended_route") ||
-                                  isChecked("official_emergency_road")
-                                }
+                                disabled={!isChecked("ai_recommended_route")}
                               />
                             </FormItem>
                           )}
@@ -1720,10 +1724,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               <FormControl>
                                 <Checkbox
                                   checked={isChecked("walk")}
-                                  disabled={
-                                    !isChecked("ai_recommended_route") ||
-                                    isChecked("official_emergency_road")
-                                  }
+                                  disabled={!isChecked("ai_recommended_route")}
                                   onCheckedChange={(checked) =>
                                     toggle(field, "walk", checked)
                                   }
@@ -1732,10 +1733,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               <RouteFormLabel
                                 id="walk"
                                 label="Walking Mode"
-                                disabled={
-                                  !isChecked("ai_recommended_route") ||
-                                  isChecked("official_emergency_road")
-                                }
+                                disabled={!isChecked("ai_recommended_route")}
                               />
                             </FormItem>
                           )}
@@ -1786,7 +1784,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                                     checked={isChecked(
                                       "official_emergency_road"
                                     )}
-                                    disabled={isChecked("ai_recommended_route")}
+                                    // disabled={isChecked("ai_recommended_route")}
                                     onCheckedChange={(checked) =>
                                       toggle(
                                         field,
@@ -1799,7 +1797,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                                 <RouteFormLabel
                                   id="official_emergency_road"
                                   label="Official Emergency Road"
-                                  disabled={isChecked("ai_recommended_route")}
+                                  // disabled={isChecked("ai_recommended_route")}
                                 />
                               </FormItem>
                             )}

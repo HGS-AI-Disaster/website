@@ -33,11 +33,13 @@ function Navigation({
   layers,
   currentLayer,
   setCurrentLayer,
+  evacuationType,
+  setEvacuationType,
 }) {
   const [autocomplete, setAutocomplete] = useState(null)
   const [currentDate, setCurrentDate] = useState("")
   const [uniqueDates, setUniqueDates] = useState([])
-  const { findNearby, evacuationType, setEvacuationType } = useMapContext()
+  const { findNearby } = useMapContext()
 
   // ref untuk container yang bisa discroll
   const scrollContainerRef = useRef(null)

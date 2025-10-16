@@ -9,6 +9,10 @@ const libraries = ["places", "visualization"]
 
 function Map() {
   const layersData = useSelector((state) => state.layers.data)
+  const [evacuationType, setEvacuationType] = useState({
+    point_type: "evacuation_point",
+    mode: "drive",
+  })
 
   const { isLoaded } = useJsApiLoader({
     id: "google-map-script",
@@ -42,6 +46,8 @@ function Map() {
           searchResult={searchResult}
           currentLayer={currentLayer}
           onReady={setFindNearby}
+          evacuationType={evacuationType}
+          setEvacuationType={setEvacuationType}
         />
 
         <Navigation
@@ -50,6 +56,8 @@ function Map() {
           currentLayer={currentLayer}
           setCurrentLayer={setCurrentLayer}
           // findNearby={findNearby}
+          evacuationType={evacuationType}
+          setEvacuationType={setEvacuationType}
         />
       </div>
     </MapProvider>
