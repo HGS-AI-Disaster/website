@@ -547,10 +547,12 @@ function GoogleMaps({
   }
 
   async function getSegmentRoute(origin, destination, mode) {
-    console.log({ destination })
     let body = {}
 
-    if (mode === "walk" || evacuationType.mode === "walk") {
+    if (
+      (mode && mode === "walk") ||
+      (!mode && evacuationType.mode === "walk")
+    ) {
       body = {
         origin: {
           location: { latLng: { latitude: origin.lat, longitude: origin.lng } },
@@ -861,7 +863,7 @@ function GoogleMaps({
   }, [routePath])
 
   async function buildSingleSafeRoute(destination, mode) {
-    console.log({ desDiBSS: destination })
+    console.log({ mode: mode })
     if (isOutsideKanto(userLocation)) {
       toast.info("You’re currently outside Kanto Region.", {
         description:
@@ -1591,6 +1593,7 @@ function GoogleMaps({
                                 point_type: evacuationType.point_type,
                                 mode: "drive",
                               })
+
                               if (
                                 evacuationType.point_type !== "evacuation_point"
                               ) {
