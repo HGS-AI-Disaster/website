@@ -1577,6 +1577,8 @@ function GoogleMaps({ currentLayer, searchResult }) {
                                 buildSingleSafeRoute(currentMarker, "drive")
                               }
                             }
+
+                            setRoad([])
                           }
 
                           if (data.items.includes("official_emergency_road")) {
