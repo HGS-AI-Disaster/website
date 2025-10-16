@@ -1245,7 +1245,7 @@ function GoogleMaps({
                           strokeColor: "#0000F1", // biru utama
                           strokeOpacity: 1,
                           strokeWeight: 4,
-                          zIndex: 999,
+                          zIndex: 1000,
                         }}
                       />
                       {r?.redSegments?.map((seg, idx) => (
@@ -1280,8 +1280,8 @@ function GoogleMaps({
                         path={r?.path}
                         options={{
                           strokeColor: "#A9A9A9", // biru utama
-                          strokeOpacity: 0.7,
-                          strokeWeight: 3,
+                          strokeOpacity: 0.6,
+                          strokeWeight: 5,
                           zIndex: 999,
                         }}
                       />
@@ -1661,9 +1661,9 @@ function GoogleMaps({
                               <FormControl>
                                 <Checkbox
                                   checked={isChecked("ai_recommended_route")}
-                                  disabled={isChecked(
-                                    "official_emergency_road"
-                                  )}
+                                  // disabled={isChecked(
+                                  //   "official_emergency_road"
+                                  // )}
                                   onCheckedChange={(checked) =>
                                     toggle(
                                       field,
@@ -1676,7 +1676,7 @@ function GoogleMaps({
                               <RouteFormLabel
                                 id="ai_recommended_route"
                                 label="AI Recommended Route"
-                                disabled={isChecked("official_emergency_road")}
+                                // disabled={isChecked("official_emergency_road")}
                               />
                             </FormItem>
                           )}
