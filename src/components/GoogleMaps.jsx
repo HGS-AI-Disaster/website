@@ -18,8 +18,14 @@ import {
 } from "@/components/ui/dialog"
 import { MarkerClusterer } from "@react-google-maps/api"
 import React, { useRef, useState, useCallback, useEffect, useMemo } from "react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { Button } from "./ui/button"
 import {
+  CarFront,
   Dot,
   Info,
   LocateFixed,
@@ -549,6 +555,10 @@ function GoogleMaps({
   async function getSegmentRoute(origin, destination, mode) {
     let body = {}
 
+    if (mode) {
+      setEvacuationType({ point_type: evacuationType.point_type, mode })
+    }
+
     if (
       (mode && mode === "walk") ||
       (!mode && evacuationType.mode === "walk")
@@ -863,7 +873,6 @@ function GoogleMaps({
   }, [routePath])
 
   async function buildSingleSafeRoute(destination, mode) {
-    console.log({ mode: mode })
     if (isOutsideKanto(userLocation)) {
       toast.info("You’re currently outside Kanto Region.", {
         description:
@@ -1505,40 +1514,84 @@ function GoogleMaps({
 
             {/* Kontrol zoom & lokasi */}
             <div className="absolute bottom-20 right-2 flex flex-col gap-1 justify-end items-end">
-              <Button
-                size={"sm"}
-                onClick={handleZoomIn}
-                className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
-              >
-                <ZoomIn />
-              </Button>
-              <Button
-                size={"sm"}
-                onClick={handleZoomOut}
-                className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
-              >
-                <ZoomOut />
-              </Button>
-              <Button
-                size={"sm"}
-                className="w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
-                onClick={getUserLoc}
-              >
-                <LocateFixed />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size={"sm"}
+                    onClick={handleZoomIn}
+                    className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
+                  >
+                    <ZoomIn />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Zoom in maps</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size={"sm"}
+                    onClick={handleZoomOut}
+                    className="cursor-pointer bg-white hover:bg-gray-200 text-black font-bold"
+                  >
+                    <ZoomOut />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Zoom out maps</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size={"sm"}
+                    className="w-min cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
+                    onClick={getUserLoc}
+                  >
+                    <LocateFixed />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Get your location</p>
+                </TooltipContent>
+              </Tooltip>
 
               {/* Dialog Route Type */}
               <Dialog
                 open={routeTypeDialogOpen}
                 onOpenChange={setRouteTypeDialogOpen}
               >
-                <DialogTrigger asChild>
-                  <Button
-                    size={"lg"}
-                    className=" h-[48px] cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
-                  >
-                    <Route />
-                  </Button>
+                <DialogTrigger>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size={"lg"}
+                        className="h-[48px] flex cursor-pointer bg-gray-50 hover:bg-gray-200 text-black"
+                      >
+                        {evacuationType.mode === "drive" ? (
+                          <CarFront />
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            fill="currentColor"
+                            className="bi bi-person-walking"
+                            viewBox="0 0 16 16"
+                          >
+                            <path d="M9.5 1.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0M6.44 3.752A.75.75 0 0 1 7 3.5h1.445c.742 0 1.32.643 1.243 1.38l-.43 4.083a1.8 1.8 0 0 1-.088.395l-.318.906.213.242a.8.8 0 0 1 .114.175l2 4.25a.75.75 0 1 1-1.357.638l-1.956-4.154-1.68-1.921A.75.75 0 0 1 6 8.96l.138-2.613-.435.489-.464 2.786a.75.75 0 1 1-1.48-.246l.5-3a.75.75 0 0 1 .18-.375l2-2.25Z" />
+                            <path d="M6.25 11.745v-1.418l1.204 1.375.261.524a.8.8 0 0 1-.12.231l-2.5 3.25a.75.75 0 1 1-1.19-.914zm4.22-4.215-.494-.494.205-1.843.006-.067 1.124 1.124h1.44a.75.75 0 0 1 0 1.5H11a.75.75 0 0 1-.531-.22Z" />
+                          </svg>
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Change travel mode</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -1614,42 +1667,51 @@ function GoogleMaps({
                           }
 
                           if (data.items.includes("official_emergency_road")) {
-                            try {
-                              const url = import.meta.env
-                                .VITE_SUPABASE_EMERGENCY_ROAD_URL
-                              console.log("Fetching from:", url)
+                            if (!data.items.includes("ai_recommended_route")) {
+                              setMarkers([])
+                              setRoutePath([])
+                            }
 
-                              const res = await fetch(url)
-                              if (!res.ok)
-                                throw new Error(
-                                  `Failed to fetch GeoJSON (${res.status})`
+                            if (!road.length) {
+                              try {
+                                const url = import.meta.env
+                                  .VITE_SUPABASE_EMERGENCY_ROAD_URL
+                                console.log("Fetching from:", url)
+
+                                const res = await fetch(url)
+                                if (!res.ok)
+                                  throw new Error(
+                                    `Failed to fetch GeoJSON (${res.status})`
+                                  )
+
+                                const data = await res.json()
+                                console.log("GeoJSON result:", data)
+
+                                if (!data?.features) {
+                                  console.warn("No features found in GeoJSON")
+                                  return
+                                }
+
+                                // === Convert LineString ke routePath ===
+                                const lineFeatures = data.features.filter(
+                                  (f) => f.geometry?.type === "LineString"
                                 )
 
-                              const data = await res.json()
-                              console.log("GeoJSON result:", data)
+                                const converted = lineFeatures.map(
+                                  (f, idx) => ({
+                                    waypointIndex: idx,
+                                    alternativeIndex: 0,
+                                    path: f.geometry.coordinates.map(
+                                      ([lng, lat]) => ({ lat, lng })
+                                    ),
+                                    redSegments: [],
+                                  })
+                                )
 
-                              if (!data?.features) {
-                                console.warn("No features found in GeoJSON")
-                                return
+                                setRoad(converted)
+                              } catch (err) {
+                                console.error("❌ Error fetching GeoJSON:", err)
                               }
-
-                              // === Convert LineString ke routePath ===
-                              const lineFeatures = data.features.filter(
-                                (f) => f.geometry?.type === "LineString"
-                              )
-
-                              const converted = lineFeatures.map((f, idx) => ({
-                                waypointIndex: idx,
-                                alternativeIndex: 0,
-                                path: f.geometry.coordinates.map(
-                                  ([lng, lat]) => ({ lat, lng })
-                                ),
-                                redSegments: [],
-                              }))
-
-                              setRoad(converted)
-                            } catch (err) {
-                              console.error("❌ Error fetching GeoJSON:", err)
                             }
                           }
                         })}

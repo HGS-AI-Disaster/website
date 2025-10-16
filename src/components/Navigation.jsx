@@ -27,6 +27,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { useMapContext } from "@/context/MapContext"
+import { toast } from "sonner"
 
 function Navigation({
   setSearchResult,
@@ -130,12 +131,15 @@ function Navigation({
                 <div
                   className="rounded-full h-[38px] cursor-pointer bg-white w-[38px] flex justify-center items-center"
                   onClick={() => {
-                    console.log({ evacuationType })
                     setEvacuationType({
                       point_type: "main",
                       mode: evacuationType.mode,
                     })
-                    findNearby && findNearby("main")
+                    findNearby &&
+                      toast.promise(findNearby("main"), {
+                        loading: "Searching for nearby main hospitals...",
+                        id: "searching-main-hospitals",
+                      })
                   }}
                 >
                   <img
@@ -159,7 +163,11 @@ function Navigation({
                       point_type: "local",
                       mode: evacuationType.mode,
                     })
-                    findNearby && findNearby("local")
+                    findNearby &&
+                      toast.promise(findNearby("local"), {
+                        loading: "Searching for nearby local healthcares...",
+                        id: "searching-local-healthcares",
+                      })
                   }}
                 >
                   <img
