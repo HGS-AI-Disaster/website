@@ -196,6 +196,15 @@ function GoogleMaps({
   const watchedItems = form.watch("items") || []
 
   async function findNearbyHospitals(type, mode) {
+    // === Sync form state & evacuationType ===
+    form.reset({
+      items: ["ai_recommended_route", "drive"],
+    })
+    setEvacuationType((prev) => ({
+      ...prev,
+      mode: "drive",
+    }))
+
     if (mode) {
       setEvacuationType({ point_type: evacuationType.point_type, mode })
     }
