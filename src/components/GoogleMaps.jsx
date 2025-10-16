@@ -1560,17 +1560,22 @@ function GoogleMaps({ currentLayer, searchResult }) {
                                 point_type: evacuationType.point_type,
                                 mode: "walk",
                               })
+
+                              if (
+                                evacuationType.point_type !== "evacuation_point"
+                              ) {
+                                buildSingleSafeRoute(currentMarker, "walk")
+                              }
                             } else if (data.items.includes("drive")) {
                               setEvacuationType({
                                 point_type: evacuationType.point_type,
                                 mode: "drive",
                               })
-                            }
-
-                            if (
-                              evacuationType.point_type !== "evacuation_point"
-                            ) {
-                              buildSingleSafeRoute(currentMarker, "walk")
+                              if (
+                                evacuationType.point_type !== "evacuation_point"
+                              ) {
+                                buildSingleSafeRoute(currentMarker, "drive")
+                              }
                             }
                           }
 
