@@ -1280,7 +1280,7 @@ function GoogleMaps({
                         path={r?.path}
                         options={{
                           strokeColor: "#A9A9A9", // biru utama
-                          strokeOpacity: 1,
+                          strokeOpacity: 0.7,
                           strokeWeight: 3,
                           zIndex: 999,
                         }}
@@ -1611,15 +1611,6 @@ function GoogleMaps({
                           }
 
                           if (data.items.includes("official_emergency_road")) {
-                            setMarkers([])
-                            setRoutePath([])
-
-                            setWaypoints([])
-                            setWaypointMarkers([])
-
-                            setClusters([])
-                            setSupercluster(null)
-
                             try {
                               const url = import.meta.env
                                 .VITE_SUPABASE_EMERGENCY_ROAD_URL
