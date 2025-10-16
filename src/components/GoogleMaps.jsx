@@ -184,7 +184,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
 
   const watchedItems = form.watch("items") || []
 
-  async function findNearbyHospitals(type) {
+  async function findNearbyHospitals(type, mode) {
     setRoad([])
     setMarkers([])
     setEvacuationType({ point_type: `${type}`, mode: evacuationType.mode })
@@ -275,7 +275,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
       setMarkers(shown)
 
       if (!outsideKanto) {
-        buildSingleSafeRoute(shown[0])
+        buildSingleSafeRoute(shown[0], mode)
         setCurrentMarker(shown[0])
       }
     } catch (err) {
@@ -1211,6 +1211,7 @@ function GoogleMaps({ currentLayer, searchResult }) {
                             variant={"outline"}
                             disabled={isOutsideKanto(userLocation)}
                             onClick={() => {
+                              console.log({ mode: evacuationType.mode })
                               buildSingleSafeRoute(m, evacuationType.mode)
                               setCurrentMarker(m)
                             }}
@@ -1566,6 +1567,14 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               ) {
                                 buildSingleSafeRoute(currentMarker, "walk")
                               }
+
+                              if (road.length) {
+                                setRoad([])
+                                findNearbyHospitals(
+                                  evacuationType.point_type,
+                                  "walk"
+                                )
+                              }
                             } else if (data.items.includes("drive")) {
                               setEvacuationType({
                                 point_type: evacuationType.point_type,
@@ -1576,9 +1585,15 @@ function GoogleMaps({ currentLayer, searchResult }) {
                               ) {
                                 buildSingleSafeRoute(currentMarker, "drive")
                               }
-                            }
 
-                            setRoad([])
+                              if (road.length) {
+                                setRoad([])
+                                findNearbyHospitals(
+                                  evacuationType.point_type,
+                                  "drive"
+                                )
+                              }
+                            }
                           }
 
                           if (data.items.includes("official_emergency_road")) {
