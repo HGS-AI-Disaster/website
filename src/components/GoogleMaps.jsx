@@ -1291,8 +1291,8 @@ function GoogleMaps({
                         path={r?.path}
                         options={{
                           strokeColor: "#A9A9A9", // biru utama
-                          strokeOpacity: 0.6,
-                          strokeWeight: 5,
+                          strokeOpacity: 1,
+                          strokeWeight: 2,
                           zIndex: 999,
                         }}
                       />
