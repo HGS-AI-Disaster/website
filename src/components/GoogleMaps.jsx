@@ -185,6 +185,10 @@ function GoogleMaps({ currentLayer, searchResult }) {
   const watchedItems = form.watch("items") || []
 
   async function findNearbyHospitals(type, mode) {
+    if (mode) {
+      setEvacuationType({ point_type: evacuationType.point_type, mode })
+    }
+
     setRoad([])
     setMarkers([])
     setEvacuationType({ point_type: `${type}`, mode: evacuationType.mode })
