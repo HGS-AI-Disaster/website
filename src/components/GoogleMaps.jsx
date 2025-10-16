@@ -1670,6 +1670,9 @@ function GoogleMaps({
                             if (!data.items.includes("ai_recommended_route")) {
                               setMarkers([])
                               setRoutePath([])
+                              setClusters([])
+                              setSupercluster(null)
+                              setWaypointMarkers([])
                             }
 
                             if (!road.length) {
