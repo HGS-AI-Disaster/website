@@ -1236,7 +1236,7 @@ function GoogleMaps({
                           srcset=""
                         />
                       </HoverCardTrigger>
-                      <HoverCardContent className={"w-fit py-2 px-2"}>
+                      <HoverCardContent className={"w-fit pt-2 ps-3 pe-2 pb-3"}>
                         <div className="flex gap-3">
                           <div className="desc">
                             <div className="font-semibold max-w-[200px]">
