@@ -69,6 +69,7 @@ import {
   isOutsideKanto,
   isOutsideChiba,
 } from "@/utils/geoUtils"
+import { Badge } from "./ui/badge"
 
 const items = [
   {
@@ -270,7 +271,7 @@ function GoogleMaps({
       } else if (type === "local") {
         url = import.meta.env.VITE_SUPABASE_LOCAL_HEALTHCENTERS_URL
         description =
-          "We’ll show all local healthcares in Chiba instead of the nearest ones."
+          "We’ll show all emergency hospitals in Chiba instead of the nearest ones."
       }
 
       let geojson = await fetchGeoJSON(url)
@@ -286,7 +287,11 @@ function GoogleMaps({
       }
 
       const hospitals = geojson.features.map((f) => ({
-        name: f.properties.name_en,
+        name: f.properties.name,
+        name_en: f.properties.name_en,
+        type: f.properties.type,
+        address: f.properties.address,
+        zip_code: f.properties.zip_code,
         lat: f.geometry.coordinates[1],
         lng: f.geometry.coordinates[0],
       }))
@@ -641,7 +646,6 @@ function GoogleMaps({
         const data = await res.json()
 
         if (data.type === "FeatureCollection") {
-          // localStorage.setItem(cacheKey, JSON.stringify(data.features))
           setShelters(data.features)
           return
         } else {
@@ -1218,10 +1222,10 @@ function GoogleMaps({
                     mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
                   >
                     <HoverCard
-                      openDelay={0}
+                      openDelay={300}
                       className=""
                     >
-                      <HoverCardTrigger className="relative -top-8/12">
+                      <HoverCardTrigger className="relative -top-8/12 cursor-pointer">
                         <img
                           src={
                             evacuationType.point_type === "main"
@@ -1233,20 +1237,40 @@ function GoogleMaps({
                         />
                       </HoverCardTrigger>
                       <HoverCardContent className={"w-fit py-2 px-2"}>
-                        <div className="font-semibold mb-2">{m.name}</div>
-                        <div className="flex items-center justify-end">
-                          <Button
-                            variant={"outline"}
-                            disabled={isOutsideKanto(userLocation)}
-                            onClick={() => {
-                              console.log({ mode: evacuationType.mode })
-                              buildSingleSafeRoute(m, evacuationType.mode)
-                              setCurrentMarker(m)
-                            }}
-                          >
-                            <TrendingUp />
-                            Direction
-                          </Button>
+                        <div className="flex gap-3">
+                          <div className="desc">
+                            <div className="font-semibold max-w-[200px]">
+                              {m.name_en}
+                            </div>
+                            <Badge
+                              variant="outline"
+                              className="border-green-200 text-green-400 font-normal my-2"
+                            >
+                              {m.type}
+                            </Badge>
+                            <div className="text-xs text-gray-500">
+                              {m.name}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {m.address}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {m.zip_code}
+                            </div>
+                          </div>
+                          <div className="flex justify-end">
+                            <Button
+                              variant={"outline"}
+                              disabled={isOutsideKanto(userLocation)}
+                              onClick={() => {
+                                console.log({ mode: evacuationType.mode })
+                                buildSingleSafeRoute(m, evacuationType.mode)
+                                setCurrentMarker(m)
+                              }}
+                            >
+                              <TrendingUp />
+                            </Button>
+                          </div>
                         </div>
                       </HoverCardContent>
                     </HoverCard>
@@ -1504,7 +1528,10 @@ function GoogleMaps({
                         </div>
                       </HoverCardTrigger>
                       <HoverCardContent
-                        className={"w-fit py-1 px-2 text-center"}
+                        className={"w-fit py-1 px-2 text-center cursor-pointer"}
+                        onClick={() => {
+                          console.log("test")
+                        }}
                       >
                         Disaster point
                       </HoverCardContent>
