@@ -165,7 +165,7 @@ function Navigation({
                     })
                     findNearby &&
                       toast.promise(findNearby("local"), {
-                        loading: "Searching for nearby local healthcares...",
+                        loading: "Searching for nearby emergency hospitals...",
                         id: "searching-local-healthcares",
                       })
                   }}
@@ -178,7 +178,7 @@ function Navigation({
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Nearby Local Healthcares</p>
+                <p>Nearby Emergency Hospitals</p>
               </TooltipContent>
             </Tooltip>
             <Tooltip delayDuration={400}>
@@ -339,7 +339,7 @@ function Navigation({
                               </div>
                               <div className="flex-1">
                                 <div className="legend-title font-semibold">
-                                  Local Healthcare
+                                  Emergency Hospital
                                 </div>
                                 <div className="legend-desc text-sm">
                                   Nearby clinics or health posts that provide
@@ -420,7 +420,7 @@ function Navigation({
                     srcset=""
                   />
                 </div>
-                <div className="text">Local Healthcare</div>
+                <div className="text">Emergency Hospitals</div>
               </div>
               <div className="low px-3 py-1 flex items-center gap-3">
                 {/* <div className="color-box w-[0.8rem] h-[0.8rem] bg-red-500"></div> */}
