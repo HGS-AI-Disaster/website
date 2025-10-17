@@ -197,21 +197,40 @@ function GoogleMaps({
   const watchedItems = form.watch("items") || []
 
   async function findNearbyHospitals(type, mode) {
-    // === Sync form state & evacuationType ===
-    form.reset({
-      items: ["ai_recommended_route", "drive"],
-    })
-    setEvacuationType((prev) => ({
-      ...prev,
-      mode: "drive",
-    }))
+    if (mode) {
+      // gunakan mode yang sedang aktif dari parameter, jangan hardcode drive
+      form.reset({
+        items: ["ai_recommended_route", mode],
+      })
+      setEvacuationType((prev) => ({
+        ...prev,
+        mode,
+      }))
+    } else {
+      // fallback default kalau ga dikasih mode
+      form.reset({
+        items: ["ai_recommended_route", "drive"],
+      })
+      setEvacuationType((prev) => ({
+        ...prev,
+        mode: "drive",
+      }))
+    }
 
     if (mode) {
-      setEvacuationType({ point_type: evacuationType.point_type, mode })
+      setEvacuationType({
+        point_type: type,
+        mode,
+      })
+    } else {
+      // fallback ke mode lama kalau tidak dikasih mode
+      setEvacuationType((prev) => ({
+        point_type: type,
+        mode: prev.mode,
+      }))
     }
 
     setMarkers([])
-    setEvacuationType({ point_type: `${type}`, mode: evacuationType.mode })
 
     if (type === "evacuation_point") {
       try {
@@ -919,8 +938,6 @@ function GoogleMaps({
       })
     })
 
-    console.log({ allRoutes })
-
     setRoutePath([allRoutes[0]])
   }
 
@@ -1054,7 +1071,13 @@ function GoogleMaps({
       active = false
       controller.abort()
     }
-  }, [waypoints, userLocation, polygons, disasterPoint, evacuationType])
+  }, [
+    waypoints,
+    userLocation,
+    polygons,
+    disasterPoint,
+    evacuationType.point_type,
+  ])
 
   useEffect(() => {
     if (!shelters.length) return
@@ -1668,10 +1691,12 @@ function GoogleMaps({
                               }
 
                               if (
-                                road.length &&
                                 !data.items.includes("official_emergency_road")
                               ) {
-                                setRoad([])
+                                if (road.length) {
+                                  setRoad([])
+                                }
+                                await new Promise((r) => setTimeout(r, 50))
                                 findNearbyHospitals(
                                   evacuationType.point_type,
                                   "walk"
@@ -1690,10 +1715,12 @@ function GoogleMaps({
                               }
 
                               if (
-                                road.length &&
                                 !data.items.includes("official_emergency_road")
                               ) {
-                                setRoad([])
+                                if (road.length) {
+                                  setRoad([])
+                                }
+                                await new Promise((r) => setTimeout(r, 50))
                                 findNearbyHospitals(
                                   evacuationType.point_type,
                                   "drive"
