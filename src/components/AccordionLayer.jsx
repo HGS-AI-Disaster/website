@@ -34,6 +34,7 @@ function AccordionLayer({
     "Cloud",
     "Typhoon",
     "Heavy Rain",
+    "Rainfall",
     "Earthquake",
     "Flood",
     "Chiba University",
