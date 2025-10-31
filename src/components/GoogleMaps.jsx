@@ -689,9 +689,9 @@ function GoogleMaps({
 
   async function planEvacuationRoute(userLoc, shelters, polygons, id) {
     if (evacuationType.point_type !== "evacuation_point") return
-    const startPoint =
-      isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
-
+    // const startPoint =
+    //   isOutsideChiba(userLoc) && disasterPoint.lat ? disasterPoint : userLoc
+    const startPoint = userLoc
     let currentPoint = startPoint
     const startingPoint = turf.point([currentPoint.lng, currentPoint.lat])
     let currentZone = null
@@ -788,10 +788,15 @@ function GoogleMaps({
       return
     }
 
-    const start =
-      isOutsideChiba(userLocation) && disasterPoint.lat
-        ? disasterPoint
-        : userLocation
+    // const start =
+    //   isOutsideChiba(userLocation) && disasterPoint.lat
+    //     ? disasterPoint
+    //     : userLocation
+    const start = !isOutsideChiba(userLocation)
+      ? userLocation // 1. User di dalam
+      : (disasterPoint.lat && !isOutsideChiba(disasterPoint))
+        ? disasterPoint // 2. User di luar, Bencana di dalam
+        : center; // 3. Keduanya di luar
 
     // kalau ada semua baru plan
     planEvacuationRoute(start, shelters, polygons)
@@ -953,9 +958,14 @@ function GoogleMaps({
         return
       }
 
-      const basePoint = isOutsideChiba(userLocation)
-        ? disasterPoint
-        : userLocation
+      // const basePoint = isOutsideChiba(userLocation)
+      //   ? disasterPoint
+      //   : userLocation
+      const basePoint = !isOutsideChiba(userLocation)
+        ? userLocation // 1. User di dalam
+        : (disasterPoint.lat && !isOutsideChiba(disasterPoint))
+          ? disasterPoint // 2. User di luar, Bencana di dalam
+          : center; // 3. Keduanya di luar
       const zoneLabel = getZoneForPoint(basePoint, polygons)
 
       if (zoneLabel == null) {
