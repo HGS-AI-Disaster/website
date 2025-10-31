@@ -354,24 +354,44 @@ function GoogleMaps({
 
           console.log("testt")
 
-          if (isOutsideChiba(pos)) {
-            setMapCenter(center)
-            mapRef.current?.panTo(center)
-            if (disasterPoint.lat) {
-              // setMapCenter(disasterPoint)
-              // mapRef.current?.panTo(disasterPoint)
-              toast.info("You’re currently outside Chiba.", {
-                description:
-                  "We don’t have data for your location yet. The evacuation routes shown are from the disaster point to the safest point, not from your current location.",
+          // if (isOutsideChiba(pos)) {
+          //   setMapCenter(center)
+          //   mapRef.current?.panTo(center)
+          //   if (disasterPoint.lat) {
+          //     // setMapCenter(disasterPoint)
+          //     // mapRef.current?.panTo(disasterPoint)
+          //     toast.info("You’re currently outside Chiba.", {
+          //       description:
+          //         "We don’t have data for your location yet. The evacuation routes shown are from the disaster point to the safest point, not from your current location.",
 
-                id: "outside-chiba",
-                duration: Number.POSITIVE_INFINITY,
-              })
-            }
+          //       id: "outside-chiba",
+          //       duration: Number.POSITIVE_INFINITY,
+          //     })
+          //   }
+          // } else {
+          //   setMapCenter(pos)
+          //   mapRef.current?.panTo(pos)
+          // }
+          if (!isOutsideChiba(pos)) {
+            setMapCenter(pos);
+            mapRef.current?.panTo(pos);
           } else {
-            setMapCenter(pos)
-            mapRef.current?.panTo(pos)
-          }
+            if (disasterPoint.lat && !isOutsideChiba(disasterPoint)) {
+                setMapCenter(disasterPoint);
+                mapRef.current?.panTo(disasterPoint);
+            } else {
+                setMapCenter(center);
+                mapRef.current?.panTo(center);
+            }
+            if (disasterPoint.lat) {
+                toast.info("You’re currently outside Chiba.", {
+                    description:
+                        "We don’t have data for your location yet. The evacuation routes shown are from the disaster point to the safest point, not from your current location.",
+                    id: "outside-chiba",
+                    duration: Number.POSITIVE_INFINITY,
+                });
+              }
+           }
         },
         (error) => {
           console.error("Gagal mendapatkan lokasi:", error)
