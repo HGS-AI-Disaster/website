@@ -355,6 +355,8 @@ function GoogleMaps({
           console.log("testt")
 
           if (isOutsideChiba(pos)) {
+            setMapCenter(center)
+            mapRef.current?.panTo(center)
             if (disasterPoint.lat) {
               setMapCenter(disasterPoint)
               mapRef.current?.panTo(disasterPoint)
