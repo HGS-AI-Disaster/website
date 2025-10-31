@@ -358,8 +358,8 @@ function GoogleMaps({
             setMapCenter(center)
             mapRef.current?.panTo(center)
             if (disasterPoint.lat) {
-              setMapCenter(disasterPoint)
-              mapRef.current?.panTo(disasterPoint)
+              // setMapCenter(disasterPoint)
+              // mapRef.current?.panTo(disasterPoint)
               toast.info("You’re currently outside Chiba.", {
                 description:
                   "We don’t have data for your location yet. The evacuation routes shown are from the disaster point to the safest point, not from your current location.",
