@@ -19,7 +19,8 @@ export const getPublicLayers = async () => {
   try {
     const { data, error } = await supabase
       .from("layers")
-      .select("*")
+      .select("*", { count: "exact" })
+      .range(0, 5000) //semua layer
       .eq("visibility", "public")
 
     if (error) throw new Error(error.message)
