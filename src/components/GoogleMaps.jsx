@@ -1378,7 +1378,7 @@ function GoogleMaps({
                       <Polyline
                         path={r?.path}
                         options={{
-                          strokeColor: "#A9A9A9", // biru utama
+                          strokeColor: "#ff0e00", // biru utama
                           strokeOpacity: 1,
                           strokeWeight: 2,
                           zIndex: 999,
@@ -1476,7 +1476,7 @@ function GoogleMaps({
                             borderRadius: "50%",
                             background:
                               "radial-gradient(circle at center, rgba(0, 0, 255, 0.8), rgba(0, 0, 255, 0.6), rgba(255, 255, 255, 0.5))", // biru utama
-                            color: "white",
+                            color: "",
                             fontSize: "10px",
                             width: 34,
                             height: 34,
