@@ -51,10 +51,10 @@ Note: This route type is still under development and will be available soon.`)
           <Popover>
             <PopoverTrigger>
               <Info
-                fill="red"
+                fill="grey"
                 size={18}
-                //opacity={0.6}
-                color="red"
+                opacity={0.6}
+                color="white"
                 className="cursor-pointer"
               />
             </PopoverTrigger>
