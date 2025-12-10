@@ -394,12 +394,12 @@ function GoogleMaps({
            }
         },
         (error) => {
-          console.error("Gagal mendapatkan lokasi:", error)
-          alert("Gagal mendapatkan lokasi. Pastikan izin lokasi diaktifkan.")
+          console.error("Failed to get location:", error)
+          alert("Failed to get location. Please make sure location permission is enabled.")
         }
       )
     } else {
-      alert("Geolocation tidak didukung oleh browser ini.")
+      alert("Geolocation is not supported by this browser.")
     }
   }
 
@@ -573,12 +573,12 @@ function GoogleMaps({
           }
         },
         (error) => {
-          console.error("Gagal mendapatkan lokasi:", error)
-          alert("Gagal mendapatkan lokasi. Pastikan izin lokasi diaktifkan.")
+          console.error("Failed to get location:", error)
+          alert("Failed to get location. Please make sure location permission is enabled.")
         }
       )
     } else {
-      alert("Geolocation tidak didukung oleh browser ini.")
+      alert("Geolocation is not supported by this browser.")
     }
   }
 
