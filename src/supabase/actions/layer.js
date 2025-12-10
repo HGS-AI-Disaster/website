@@ -6,6 +6,7 @@ export const getLayers = async () => {
     const { data, error: layerError } = await supabase
       .from("layers")
       .select("*", { count: "exact" })
+      .order("layer_date", { ascending: false })
       .range(0, 5000) //semua layer
 
     if (layerError) throw new Error(layerError.message)
@@ -21,6 +22,7 @@ export const getPublicLayers = async () => {
       .from("layers")
       .select("*", { count: "exact" })
       .eq("visibility", "public")
+      .order("layer_date", { ascending: false })
       .range(0, 5000) //semua layer
 
     if (error) throw new Error(error.message)
