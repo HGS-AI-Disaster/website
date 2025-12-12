@@ -6,7 +6,6 @@ export const getLayers = async () => {
     const { data, error: layerError } = await supabase
       .from("layers")
       .select("*")
-      .range(0, 2000)
 
     if (layerError) throw new Error(layerError.message)
     return data
